@@ -85,7 +85,24 @@ body {
   text-overflow: ellipsis;
 }
 .session-row.grouped { padding-left: 22px; }
-.session-row.worktree .session-cwd { color: var(--accent); opacity: 0.75; }
+.session-row.worktree {
+  border-left: 3px solid var(--accent);
+  padding-left: 19px; /* keep text aligned with plain grouped rows */
+}
+.session-row.worktree .session-cwd { color: var(--accent); opacity: 0.85; }
+.session-row.worktree .session-name::after {
+  content: 'worktree';
+  margin-left: 8px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: var(--bg-active);
+  border-radius: 3px;
+  padding: 1px 5px;
+  vertical-align: 1px;
+}
 .worktree-check {
   flex-direction: row !important;
   align-items: center;
