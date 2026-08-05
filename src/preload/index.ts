@@ -33,6 +33,8 @@ const api = {
     ipcRenderer.invoke('review:diff', { id, file }),
   reviewMerge: (id: string): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke('review:merge', id),
+  reviewPr: (id: string): Promise<{ ok: boolean; url?: string; error?: string }> =>
+    ipcRenderer.invoke('review:pr', id),
   contextMenu: (id: string): void => ipcRenderer.send('sessions:contextMenu', id),
   shellEnsure: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:ensure', id),
   shellIsRunning: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:isRunning', id),

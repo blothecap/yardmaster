@@ -21,6 +21,7 @@ export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: R
   const [diff, setDiff] = useState<string | null>(null)
   const [diffError, setDiffError] = useState<string | null>(null)
   const [merging, setMerging] = useState(false)
+  const [pushing, setPushing] = useState(false)
 
   const loadFiles = useCallback(() => {
     setFiles(null)
@@ -55,6 +56,13 @@ export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: R
     setMerging(false)
     if (!result.ok) alert(`Merge failed: ${result.error}`)
     loadFiles()
+  }
+
+  const handlePushPr = async (): Promise<void> => {
+    setPushing(true)
+    const result = await window.api.reviewPr(sessionId)
+    setPushing(false)
+    if (!result.ok) alert(`Push + PR failed: ${result.error}`)
   }
 
   return (
@@ -106,6 +114,9 @@ export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: R
       <div className="review-pane-footer">
         <button onClick={handleMerge} disabled={merging}>
           {merging ? 'Merging…' : `Merge into ${baseBranch}`}
+        </button>
+        <button onClick={handlePushPr} disabled={pushing}>
+          {pushing ? 'Pushing…' : 'Push + PR'}
         </button>
         <button onClick={() => window.api.remove(sessionId)}>Remove session…</button>
       </div>

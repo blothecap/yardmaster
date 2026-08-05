@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { createWorktree } from './worktree'
-import { changedFiles, fileDiff, mergeBranch } from './git-review'
+import { changedFiles, fileDiff, mergeBranch, pushBranch } from './git-review'
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
@@ -114,5 +114,33 @@ describe('mergeBranch', () => {
     expect(result.error).toMatch(/conflict/i)
     expect(fs.existsSync(path.join(repo, '.git', 'MERGE_HEAD'))).toBe(false)
     expect(git(repo, 'status', '--porcelain')).toBe('')
+  })
+})
+
+describe('pushBranch', () => {
+  it('pushes the branch to origin on the happy path', async () => {
+    const bare = path.join(dir, 'origin.git')
+    git(dir, 'init', '--bare', '-b', 'main', bare)
+    git(repo, 'remote', 'add', 'origin', bare)
+
+    const wt = await createWorktree(repo, 'feature')
+    fs.writeFileSync(path.join(wt.path, 'b.txt'), 'new\n')
+    git(wt.path, 'add', '.')
+    git(wt.path, 'commit', '-m', 'add b')
+
+    const result = await pushBranch(wt.path, wt.branch)
+    expect(result).toEqual({ ok: true })
+    expect(git(bare, 'rev-parse', `refs/heads/${wt.branch}`)).toBeTruthy()
+  })
+
+  it('fails when the repo has no remote', async () => {
+    const wt = await createWorktree(repo, 'feature')
+    fs.writeFileSync(path.join(wt.path, 'b.txt'), 'new\n')
+    git(wt.path, 'add', '.')
+    git(wt.path, 'commit', '-m', 'add b')
+
+    const result = await pushBranch(wt.path, wt.branch)
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/origin|remote/i)
   })
 })

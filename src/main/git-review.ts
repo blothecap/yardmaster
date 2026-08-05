@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { execFile, type ExecFileException } from 'node:child_process'
 import type { ChangedFile } from '../shared/types'
 import { worktreePathFor } from './worktree'
 
@@ -74,5 +74,53 @@ export async function mergeBranch(
     await git(repoRoot, 'merge', '--abort').catch(() => {})
     const message = err instanceof Error ? err.message : String(err)
     return { ok: false, error: `merge conflict — merge aborted automatically: ${message}` }
+  }
+}
+
+export async function pushBranch(
+  worktreePath: string,
+  branch: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await git(worktreePath, 'push', '-u', 'origin', branch)
+    return { ok: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { ok: false, error: message }
+  }
+}
+
+function runGh(args: string[], cwd: string): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execFile('gh', args, { cwd, timeout: 30000 }, (err, stdout, stderr) => {
+      if (err) reject(Object.assign(err as ExecFileException, { stdout, stderr }))
+      else resolve({ stdout, stderr })
+    })
+  })
+}
+
+export async function pushAndCreatePr(
+  worktreePath: string,
+  branch: string,
+  baseBranch: string
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const pushed = await pushBranch(worktreePath, branch)
+  if (!pushed.ok) return pushed
+
+  try {
+    const { stdout } = await runGh(
+      ['pr', 'create', '--head', branch, '--base', baseBranch, '--fill'],
+      worktreePath
+    )
+    const lines = stdout.split('\n').map((l) => l.trim()).filter((l) => l !== '')
+    const urlLine = [...lines].reverse().find((l) => /^https:/.test(l))
+    return { ok: true, url: urlLine ?? stdout.trim() }
+  } catch (err) {
+    const e = err as ExecFileException & { stdout?: string; stderr?: string }
+    if (e.code === 'ENOENT') {
+      return { ok: false, error: 'GitHub CLI (gh) not found — install it or use Merge instead.' }
+    }
+    const message = (e.stderr ?? '').trim() || e.message
+    return { ok: false, error: message }
   }
 }

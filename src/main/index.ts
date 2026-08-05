@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, Notification } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, shell } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import * as pty from 'node-pty' // CJS module — namespace import, not default
@@ -11,7 +11,7 @@ import { ShellManager } from './shell-manager'
 import { resolveClaudePath } from './claude-path'
 import { shouldNotify } from './notify-policy'
 import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
-import { changedFiles, fileDiff, mergeBranch } from './git-review'
+import { changedFiles, fileDiff, mergeBranch, pushAndCreatePr } from './git-review'
 
 let win: BrowserWindow | null = null
 let manager: SessionManager | null = null
@@ -312,6 +312,30 @@ app.whenReady().then(async () => {
             message: `Merged ${session.worktree.branch} into ${session.worktree.baseBranch}.`,
             detail: "The session and worktree still exist — remove the session when you're done."
           })
+        }
+        return result
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    })
+    ipcMain.handle('review:pr', async (_e, id: string) => {
+      const session = manager!.list().find((s) => s.id === id)
+      if (!session || !session.worktree) return { ok: false, error: 'not a worktree session' }
+      try {
+        const result = await pushAndCreatePr(
+          session.cwd,
+          session.worktree.branch,
+          session.worktree.baseBranch
+        )
+        if (result.ok && result.url) {
+          shell.openExternal(result.url)
+          if (win && !win.isDestroyed()) {
+            await dialog.showMessageBox(win, {
+              type: 'info',
+              message: 'Pull request created.',
+              detail: result.url
+            })
+          }
         }
         return result
       } catch (err) {
