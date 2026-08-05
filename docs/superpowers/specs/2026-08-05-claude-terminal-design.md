@@ -148,6 +148,15 @@ with a confirmation.
   · subtle last-activity timestamp. Drag to reorder; double-click to rename.
 - Right-click on a row opens a native context menu (added post-v1): Rename,
   Close (live) or Relaunch (exited), and Remove… with a native confirm dialog.
+- Worktree sessions (added post-v1): when the chosen directory is a git repo,
+  the New Session dialog offers "give this session its own isolated copy" —
+  the app runs `git worktree add <repo>/.worktrees/<slug> -b <slug>` (branch =
+  kebab-cased session name, uniqued on collision) and the session's cwd is the
+  worktree. `.worktrees/` is registered in `.git/info/exclude` (never touches
+  the user's .gitignore). Sidebar groups worktree sessions under a repo
+  header, rows show `⎇ branch`; shortcuts follow the grouped visible order.
+  Removing a worktree session always asks: delete copy & branch / delete copy,
+  keep branch / cancel. Plain (non-worktree) sessions are unchanged.
 - Embedded shell (added post-v1): `Cmd+T` toggles a split pane below the
   active Claude session running the user's login shell in that session's cwd,
   separated by a visible draggable divider (resizable 15–80% of the area,

@@ -14,6 +14,13 @@ Run through this before declaring a build good. Prereq: `claude` installed and l
 - [ ] ⌘↑/⌘↓ switch sessions (same as ⌘K/⌘J)
 - [ ] Right-click a row: Rename starts inline edit; Close appears for live sessions, Relaunch for exited; Remove… shows native confirm
 
+## Worktree sessions
+- [ ] In a git repo dir, the dialog shows the "isolated copy" checkbox (hidden for non-repo dirs)
+- [ ] Creating with it checked: session runs in `<repo>/.worktrees/<branch>`; `git status` in the main repo stays clean
+- [ ] Two worktree sessions on the same repo appear grouped under the repo header with ⎇ branch labels
+- [ ] Both sessions can edit the same file without touching each other's copy
+- [ ] Removing (× or right-click) shows the 3-option dialog; "keep branch" leaves the branch in `git branch`; "delete" removes worktree + branch
+
 ## Embedded shell (⌘T)
 - [ ] ⌘T opens a shell pane below the Claude pane, cd'd to the session's directory (`pwd` to confirm)
 - [ ] Shell keeps scrollback when hidden (⌘T ⌘T) and across session switches

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import type { SessionView } from '../../../shared/types'
 
 interface SidebarProps {
@@ -49,9 +49,18 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
         <button className="new-btn" title="New session (⌘N)" onClick={props.onNew}>+</button>
       </div>
       <ul>
-        {props.sessions.map((s) => (
+        {props.sessions.map((s, i) => {
+          const prev = props.sessions[i - 1]
+          const startsGroup =
+            s.worktree && prev?.worktree?.repoRoot !== s.worktree.repoRoot
+          return (
+          <Fragment key={s.id}>
+          {startsGroup && s.worktree && (
+            <li className="repo-group-header" title={s.worktree.repoRoot}>
+              {shortCwd(s.worktree.repoRoot, props.home)}
+            </li>
+          )}
           <li
-            key={s.id}
             draggable
             onDragStart={() => { dragId.current = s.id }}
             onDragOver={(e) => e.preventDefault()}
@@ -59,7 +68,8 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
             className={[
               'session-row',
               s.id === props.activeId ? 'active' : '',
-              s.status === 'needs-you' ? 'needs-you' : ''
+              s.status === 'needs-you' ? 'needs-you' : '',
+              s.worktree ? 'worktree' : ''
             ].join(' ')}
             onClick={() => props.onSelect(s.id)}
             onDoubleClick={() => { setEditText(s.name); props.onRenameStart(s.id) }}
@@ -81,7 +91,9 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
             ) : (
               <div className="session-labels">
                 <div className="session-name">{s.name}</div>
-                <div className="session-cwd">{shortCwd(s.cwd, props.home)}</div>
+                <div className="session-cwd" title={s.cwd}>
+                  {s.worktree ? `⎇ ${s.worktree.branch}` : shortCwd(s.cwd, props.home)}
+                </div>
               </div>
             )}
             <span className="session-time">{relativeTime(s.lastActivityAt)}</span>
@@ -90,6 +102,10 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
               title="Remove session"
               onClick={(e) => {
                 e.stopPropagation()
+                if (s.worktree) {
+                  props.onRemove(s.id) // main process shows the worktree removal dialog
+                  return
+                }
                 if (confirm(`Remove session "${s.name}"? This deletes it from the sidebar.`)) {
                   props.onRemove(s.id)
                 }
@@ -98,7 +114,9 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
               ×
             </button>
           </li>
-        ))}
+          </Fragment>
+          )
+        })}
       </ul>
     </aside>
   )

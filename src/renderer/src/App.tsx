@@ -1,5 +1,5 @@
 /// <reference path="../../preload/index.d.ts" />
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SessionView, ShortcutAction } from '../../shared/types'
 import Sidebar from './components/Sidebar'
 import TerminalPane from './components/TerminalPane'
@@ -20,9 +20,30 @@ export default function App(): React.JSX.Element {
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
   const [shellHeight, setShellHeight] = useState(35) // % of the terminal area
 
+  // Sidebar shows worktree sessions grouped under their repo; shortcuts follow the same visible order
+  const displaySessions = useMemo(() => {
+    const seen = new Set<string>()
+    const out: SessionView[] = []
+    for (const s of sessions) {
+      if (seen.has(s.id)) continue
+      if (s.worktree) {
+        for (const t of sessions) {
+          if (t.worktree?.repoRoot === s.worktree.repoRoot && !seen.has(t.id)) {
+            out.push(t)
+            seen.add(t.id)
+          }
+        }
+      } else {
+        out.push(s)
+        seen.add(s.id)
+      }
+    }
+    return out
+  }, [sessions])
+
   // Refs mirror state that shortcut/event handlers need without re-subscribing
-  const sessionsRef = useRef(sessions)
-  sessionsRef.current = sessions
+  const sessionsRef = useRef(displaySessions)
+  sessionsRef.current = displaySessions
   const activeIdRef = useRef(activeId)
   activeIdRef.current = activeId
   const shellOpenRef = useRef(shellOpen)
@@ -152,7 +173,7 @@ export default function App(): React.JSX.Element {
     <div className="app layout">
       {!collapsed && (
         <Sidebar
-          sessions={sessions}
+          sessions={displaySessions}
           activeId={activeId}
           collapsed={collapsed}
           home={home}
@@ -215,9 +236,9 @@ export default function App(): React.JSX.Element {
               .map((s) => s.cwd)
           )]}
           home={home}
-          onCreate={async (name, cwd) => {
+          onCreate={async (name, cwd, worktree) => {
             try {
-              const view = await window.api.create(name, cwd)
+              const view = await window.api.create(name, cwd, worktree)
               setDialogOpen(false)
               switchTo(view.id)
             } catch (err) {

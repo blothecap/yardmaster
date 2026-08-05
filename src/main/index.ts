@@ -10,6 +10,7 @@ import { SessionManager, type SpawnOpts } from './session-manager'
 import { ShellManager } from './shell-manager'
 import { resolveClaudePath } from './claude-path'
 import { shouldNotify } from './notify-policy'
+import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
 
 let win: BrowserWindow | null = null
 let manager: SessionManager | null = null
@@ -167,12 +168,22 @@ app.whenReady().then(async () => {
       home: app.getPath('home'),
       sessions: manager!.list()
     }))
-    ipcMain.handle('sessions:create', (_e, { name, cwd }) => {
+    ipcMain.handle('sessions:create', async (_e, { name, cwd, worktree }) => {
       let ok = false
       try { ok = fs.statSync(cwd).isDirectory() } catch { ok = false }
       if (!ok) throw new Error(`not a directory: ${cwd}`)
-      return manager!.create(name, cwd)
+      if (!worktree) return manager!.create(name, cwd)
+      const repoRoot = await detectRepoRoot(cwd)
+      if (!repoRoot) throw new Error(`not a git repository: ${cwd}`)
+      const wt = await createWorktree(repoRoot, name)
+      try {
+        return manager!.create(name, wt.path, { repoRoot, branch: wt.branch })
+      } catch (err) {
+        await removeWorktree(repoRoot, wt.path, wt.branch, true).catch(() => {})
+        throw err
+      }
     })
+    ipcMain.handle('app:checkGitRepo', (_e, dir: string) => detectRepoRoot(dir))
     ipcMain.handle('sessions:activate', (_e, id) => manager!.activate(id))
     ipcMain.handle('sessions:setActive', (_e, id) => manager!.setActive(id))
     ipcMain.handle('sessions:rename', (_e, { id, name }) => manager!.rename(id, name))
@@ -180,10 +191,46 @@ app.whenReady().then(async () => {
       shellManager!.kill(id)
       manager!.close(id)
     })
-    ipcMain.handle('sessions:remove', (_e, id) => {
+    async function removeSessionFlow(id: string, plainAlreadyConfirmed: boolean): Promise<void> {
+      const session = manager!.list().find((s) => s.id === id)
+      if (!session || !win || win.isDestroyed()) return
+      if (session.worktree) {
+        const r = await dialog.showMessageBox(win, {
+          type: 'warning',
+          buttons: ['Delete copy & branch', 'Delete copy, keep branch', 'Cancel'],
+          defaultId: 2,
+          cancelId: 2,
+          message: `Remove session "${session.name}" and its worktree?`,
+          detail: `Worktree: ${session.cwd}\nBranch: ${session.worktree.branch}\n\n"Keep branch" leaves the work recoverable in git.`
+        })
+        if (r.response === 2) return
+        shellManager!.kill(id)
+        manager!.remove(id)
+        try {
+          await removeWorktree(session.worktree.repoRoot, session.cwd, session.worktree.branch, r.response === 0)
+        } catch (err) {
+          dialog.showErrorBox(
+            'Worktree cleanup failed',
+            `The session was removed but its worktree could not be cleaned up:\n${err instanceof Error ? err.message : err}\n\nYou can clean it up manually with:\ngit worktree remove --force "${session.cwd}"`
+          )
+        }
+        return
+      }
+      if (!plainAlreadyConfirmed) {
+        const r = await dialog.showMessageBox(win, {
+          type: 'warning',
+          buttons: ['Remove', 'Cancel'],
+          defaultId: 1,
+          cancelId: 1,
+          message: `Remove session "${session.name}"?`,
+          detail: 'This deletes it from the sidebar. The Claude conversation itself is not deleted.'
+        })
+        if (r.response !== 0) return
+      }
       shellManager!.kill(id)
       manager!.remove(id)
-    })
+    }
+    ipcMain.handle('sessions:remove', (_e, id) => removeSessionFlow(id, true))
     ipcMain.handle('shell:ensure', (_e, id: string) => {
       const session = manager!.list().find((s) => s.id === id)
       if (!session) return false
@@ -206,18 +253,7 @@ app.whenReady().then(async () => {
         { type: 'separator' },
         {
           label: 'Remove…',
-          click: async () => {
-            if (!win || win.isDestroyed()) return
-            const r = await dialog.showMessageBox(win, {
-              type: 'warning',
-              buttons: ['Remove', 'Cancel'],
-              defaultId: 1,
-              cancelId: 1,
-              message: `Remove session "${session.name}"?`,
-              detail: 'This deletes it from the sidebar. The Claude conversation itself is not deleted.'
-            })
-            if (r.response === 0) manager!.remove(id)
-          }
+          click: () => { void removeSessionFlow(id, false) }
         }
       ]
       Menu.buildFromTemplate(template).popup({ window: win })

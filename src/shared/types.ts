@@ -8,9 +8,10 @@ export const HOOK_EVENTS: HookEvent[] = ['SessionStart', 'UserPromptSubmit', 'No
 export interface SessionMeta {
   id: string // app-level UUID, not the Claude session id
   name: string
-  cwd: string
+  cwd: string // for worktree sessions this is the worktree path
   claudeSessionId: string | null
   order: number
+  worktree: { repoRoot: string; branch: string } | null
 }
 
 /** Pushed to the renderer */

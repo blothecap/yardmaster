@@ -74,6 +74,24 @@ body {
   border-radius: 3px;
   font-size: 13px;
 }
+.repo-group-header {
+  padding: 8px 12px 2px;
+  color: var(--fg-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.session-row.worktree { padding-left: 22px; }
+.session-row.worktree .session-cwd { color: var(--accent); opacity: 0.75; }
+.worktree-check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+.worktree-check input { width: auto; }
 .dot { width: 8px; height: 8px; min-width: 8px; border-radius: 50%; }
 .dot-working { background: var(--status-working); animation: pulse 1.2s ease-in-out infinite; }
 .dot-needs-you { background: var(--status-needs-you); }

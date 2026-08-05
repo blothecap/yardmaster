@@ -52,7 +52,7 @@ export class SessionManager extends EventEmitter {
     this.deps = { now: Date.now, ...deps }
     for (const meta of this.deps.store.load().sessions) {
       this.sessions.set(meta.id, {
-        meta,
+        meta: { ...meta, worktree: meta.worktree ?? null }, // tolerate pre-worktree sessions.json
         status: 'exited',
         pty: null,
         lastActivityAt: null,
@@ -76,9 +76,9 @@ export class SessionManager extends EventEmitter {
       }))
   }
 
-  create(name: string, cwd: string): SessionView {
+  create(name: string, cwd: string, worktree: SessionMeta['worktree'] = null): SessionView {
     const order = Math.max(-1, ...[...this.sessions.values()].map((s) => s.meta.order)) + 1
-    const meta: SessionMeta = { id: crypto.randomUUID(), name, cwd, claudeSessionId: null, order }
+    const meta: SessionMeta = { id: crypto.randomUUID(), name, cwd, claudeSessionId: null, order, worktree }
     const session: InternalSession = {
       meta,
       status: 'idle',

@@ -218,9 +218,24 @@ describe('spawn size', () => {
   })
 })
 
+describe('worktree metadata', () => {
+  it('create stores and persists worktree info', () => {
+    const m = makeManager()
+    const v = m.create('wt', '/repo/.worktrees/wt', { repoRoot: '/repo', branch: 'wt' })
+    expect(v.worktree).toEqual({ repoRoot: '/repo', branch: 'wt' })
+    expect(store.load().sessions[0].worktree).toEqual({ repoRoot: '/repo', branch: 'wt' })
+  })
+
+  it('tolerates pre-worktree sessions.json entries', () => {
+    store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: null, order: 0 } as never])
+    const m = makeManager()
+    expect(m.list()[0].worktree).toBeNull()
+  })
+})
+
 describe('restore from store', () => {
   it('lists persisted sessions as exited without spawning', () => {
-    store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: 'cs-1', order: 0 }])
+    store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: 'cs-1', order: 0, worktree: null }])
     const m = makeManager()
     expect(spawns).toHaveLength(0)
     expect(m.list()).toHaveLength(1)
@@ -262,7 +277,7 @@ describe('spawn failures', () => {
   })
 
   it('activate marks the session exited when the spawner throws', () => {
-    store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: 'cs-1', order: 0 }])
+    store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: 'cs-1', order: 0, worktree: null }])
     const m = new SessionManager({
       store,
       spawner: () => { throw new Error('spawn failed') },
