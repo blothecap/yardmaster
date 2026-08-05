@@ -10,8 +10,8 @@ export interface InitState {
 
 const api = {
   init: (): Promise<InitState> => ipcRenderer.invoke('app:init'),
-  create: (name: string, cwd: string, worktree = false): Promise<SessionView> =>
-    ipcRenderer.invoke('sessions:create', { name, cwd, worktree }),
+  create: (name: string, cwd: string, worktree = false, extraArgs = ''): Promise<SessionView> =>
+    ipcRenderer.invoke('sessions:create', { name, cwd, worktree, extraArgs }),
   checkGitRepo: (dir: string): Promise<string | null> => ipcRenderer.invoke('app:checkGitRepo', dir),
   activate: (id: string): Promise<void> => ipcRenderer.invoke('sessions:activate', id),
   buffer: (id: string): Promise<string> => ipcRenderer.invoke('sessions:buffer', id),

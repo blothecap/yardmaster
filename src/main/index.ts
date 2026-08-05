@@ -109,7 +109,11 @@ app.whenReady().then(async () => {
     })
     const spawner = (opts: SpawnOpts): ReturnType<typeof adapt> => {
       if (!claudePath) throw new Error('claude binary not found — cannot spawn session')
-      const args = ['--settings', opts.settingsPath, ...(opts.resumeId ? ['--resume', opts.resumeId] : [])]
+      const args = [
+        '--settings', opts.settingsPath,
+        ...(opts.resumeId ? ['--resume', opts.resumeId] : []),
+        ...opts.extraArgs
+      ]
       const proc = pty.spawn(claudePath, args, {
         name: 'xterm-256color',
         cols: opts.cols,
@@ -179,16 +183,17 @@ app.whenReady().then(async () => {
       home: app.getPath('home'),
       sessions: manager!.list()
     }))
-    ipcMain.handle('sessions:create', async (_e, { name, cwd, worktree }) => {
+    ipcMain.handle('sessions:create', async (_e, { name, cwd, worktree, extraArgs }) => {
+      const cleanArgs = typeof extraArgs === 'string' && extraArgs.trim() ? extraArgs.trim() : null
       let ok = false
       try { ok = fs.statSync(cwd).isDirectory() } catch { ok = false }
       if (!ok) throw new Error(`not a directory: ${cwd}`)
-      if (!worktree) return manager!.create(name, cwd)
+      if (!worktree) return manager!.create(name, cwd, null, cleanArgs)
       const repoRoot = await detectRepoRoot(cwd)
       if (!repoRoot) throw new Error(`not a git repository: ${cwd}`)
       const wt = await createWorktree(repoRoot, name)
       try {
-        return manager!.create(name, wt.path, { repoRoot, branch: wt.branch, baseBranch: wt.baseBranch })
+        return manager!.create(name, wt.path, { repoRoot, branch: wt.branch, baseBranch: wt.baseBranch }, cleanArgs)
       } catch (err) {
         await removeWorktree(repoRoot, wt.path, wt.branch, true).catch(() => {})
         throw err

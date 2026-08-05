@@ -54,7 +54,8 @@ describe('create', () => {
       settingsPath: `/fake/settings-${view.id}.json`,
       resumeId: null,
       cols: 80,
-      rows: 24
+      rows: 24,
+      extraArgs: []
     })
     expect(view.status).toBe('idle')
     expect(store.load().sessions).toHaveLength(1)
@@ -345,6 +346,30 @@ describe('output replay buffer', () => {
   it('returns empty string for unknown sessions', () => {
     const m = makeManager()
     expect(m.getBuffer('ghost')).toBe('')
+  })
+})
+
+describe('extra claude args', () => {
+  it('create stores extraArgs, persists them, and the spawner receives them split', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp', null, '--model opus  --permission-mode plan')
+    expect(v.extraArgs).toBe('--model opus  --permission-mode plan')
+    expect(store.load().sessions[0].extraArgs).toBe('--model opus  --permission-mode plan')
+    expect(spawns[0].opts.extraArgs).toEqual(['--model', 'opus', '--permission-mode', 'plan'])
+  })
+
+  it('no extraArgs yields an empty array for the spawner', () => {
+    const m = makeManager()
+    m.create('a', '/tmp')
+    expect(spawns[0].opts.extraArgs).toEqual([])
+  })
+
+  it('respawn (activate) reuses the stored extraArgs', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp', null, '--model opus')
+    m.close(v.id)
+    m.activate(v.id)
+    expect(spawns[1].opts.extraArgs).toEqual(['--model', 'opus'])
   })
 })
 

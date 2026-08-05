@@ -326,12 +326,12 @@ export default function App(): React.JSX.Element {
           recentDirs={[...new Set(
             [...sessions]
               .sort((a, b) => (b.lastActivityAt ?? b.statusChangedAt) - (a.lastActivityAt ?? a.statusChangedAt))
-              .map((s) => s.cwd)
+              .map((s) => s.worktree?.repoRoot ?? s.cwd) // worktree internals are never "projects"
           )]}
           home={home}
-          onCreate={async (name, cwd, worktree) => {
+          onCreate={async (name, cwd, worktree, extraArgs) => {
             try {
-              const view = await window.api.create(name, cwd, worktree)
+              const view = await window.api.create(name, cwd, worktree, extraArgs)
               setDialogOpen(false)
               switchTo(view.id)
             } catch (err) {

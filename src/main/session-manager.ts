@@ -17,6 +17,7 @@ export interface SpawnOpts {
   resumeId: string | null
   cols: number
   rows: number
+  extraArgs: string[]
 }
 
 export type PtySpawner = (opts: SpawnOpts) => PtyLike
@@ -100,9 +101,22 @@ export class SessionManager extends EventEmitter {
       }))
   }
 
-  create(name: string, cwd: string, worktree: SessionMeta['worktree'] = null): SessionView {
+  create(
+    name: string,
+    cwd: string,
+    worktree: SessionMeta['worktree'] = null,
+    extraArgs: string | null = null
+  ): SessionView {
     const order = Math.max(-1, ...[...this.sessions.values()].map((s) => s.meta.order)) + 1
-    const meta: SessionMeta = { id: crypto.randomUUID(), name, cwd, claudeSessionId: null, order, worktree }
+    const meta: SessionMeta = {
+      id: crypto.randomUUID(),
+      name,
+      cwd,
+      claudeSessionId: null,
+      order,
+      worktree,
+      extraArgs
+    }
     const session: InternalSession = {
       meta,
       status: 'idle',
@@ -257,7 +271,8 @@ export class SessionManager extends EventEmitter {
   private spawn(s: InternalSession, resumeId: string | null): void {
     const settingsPath = this.deps.writeSettings(s.meta.id)
     const { cols, rows } = s.lastSize ?? { cols: 80, rows: 24 }
-    const pty = this.deps.spawner({ cwd: s.meta.cwd, settingsPath, resumeId, cols, rows })
+    const extraArgs = (s.meta.extraArgs ?? '').split(/\s+/).filter(Boolean)
+    const pty = this.deps.spawner({ cwd: s.meta.cwd, settingsPath, resumeId, cols, rows, extraArgs })
     s.pty = pty
     s.spawnedAt = this.deps.now()
     s.spawnedWithResume = resumeId !== null

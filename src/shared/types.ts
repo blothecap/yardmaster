@@ -12,6 +12,8 @@ export interface SessionMeta {
   claudeSessionId: string | null
   order: number
   worktree: { repoRoot: string; branch: string; baseBranch: string } | null
+  /** Extra CLI flags appended to the claude command, e.g. "--model opus" */
+  extraArgs?: string | null
   lastActivityAt?: number | null
 }
 

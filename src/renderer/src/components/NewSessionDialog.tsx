@@ -5,7 +5,7 @@ interface NewSessionDialogProps {
   home: string
   initialDir?: string
   initialWorktree?: boolean
-  onCreate(name: string, cwd: string, worktree: boolean): void
+  onCreate(name: string, cwd: string, worktree: boolean, extraArgs: string): void
   onCancel(): void
 }
 
@@ -21,11 +21,17 @@ function shortPath(p: string, home: string): string {
   return p
 }
 
+function baseName(p: string): string {
+  const parts = p.split('/').filter(Boolean)
+  return parts[parts.length - 1] ?? p
+}
+
 export default function NewSessionDialog(props: NewSessionDialogProps): React.JSX.Element {
   const [name, setName] = useState('')
   const [cwd, setCwd] = useState(props.initialDir ?? props.recentDirs[0] ?? props.home)
   const [repoRoot, setRepoRoot] = useState<string | null>(null)
   const [worktree, setWorktree] = useState(props.initialWorktree ?? false)
+  const [extraArgs, setExtraArgs] = useState('')
 
   useEffect(() => {
     let stale = false
@@ -40,7 +46,14 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
 
   const submit = (): void => {
     const trimmedCwd = cwd.trim()
-    if (name.trim() && trimmedCwd) props.onCreate(name.trim(), trimmedCwd, worktree && repoRoot !== null)
+    if (name.trim() && trimmedCwd) {
+      props.onCreate(name.trim(), trimmedCwd, worktree && repoRoot !== null, extraArgs.trim())
+    }
+  }
+
+  const keys = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') submit()
+    if (e.key === 'Escape') props.onCancel()
   }
 
   return (
@@ -54,23 +67,13 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
             placeholder="e.g. fix-auth-bug"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') submit()
-              if (e.key === 'Escape') props.onCancel()
-            }}
+            onKeyDown={keys}
           />
         </label>
         <label>
           Directory
           <div className="dir-row">
-            <input
-              value={cwd}
-              onChange={(e) => setCwd(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submit()
-                if (e.key === 'Escape') props.onCancel()
-              }}
-            />
+            <input value={cwd} onChange={(e) => setCwd(e.target.value)} onKeyDown={keys} />
             <button
               onClick={async () => {
                 const picked = await window.api.pickDirectory()
@@ -83,9 +86,15 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
         </label>
         {props.recentDirs.length > 0 && (
           <div className="recent-dirs">
+            <span className="recent-label">Recent</span>
             {props.recentDirs.slice(0, 5).map((d) => (
-              <button key={d} className="recent-dir" onClick={() => setCwd(d)}>
-                {shortPath(d, props.home)}
+              <button
+                key={d}
+                className={`recent-dir${d === cwd ? ' selected' : ''}`}
+                title={shortPath(d, props.home)}
+                onClick={() => setCwd(d)}
+              >
+                {baseName(d)}
               </button>
             ))}
           </div>
@@ -103,6 +112,17 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
             </span>
           </label>
         )}
+        <label>
+          Claude options <span className="label-hint">optional — extra flags for the claude command</span>
+          <input
+            className="mono-input"
+            placeholder="--model opus --permission-mode plan"
+            value={extraArgs}
+            onChange={(e) => setExtraArgs(e.target.value)}
+            onKeyDown={keys}
+            spellCheck={false}
+          />
+        </label>
         <div className="dialog-actions">
           <button onClick={props.onCancel}>Cancel</button>
           <button className="primary" disabled={!name.trim() || !cwd.trim()} onClick={submit}>
