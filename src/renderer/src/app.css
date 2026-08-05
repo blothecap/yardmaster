@@ -496,21 +496,36 @@ body {
 .review-pane-error { color: var(--status-needs-you); }
 .review-pane-footer {
   display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-top: 1px solid var(--bg-active);
+  background: var(--bg);
 }
+.footer-spacer { flex: 1; }
 .review-pane-footer button {
-  background: var(--bg-hover);
-  color: var(--fg);
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 5px 12px;
+  border-radius: 5px;
   font-size: 12px;
   cursor: pointer;
-  flex: 1;
+  white-space: nowrap;
 }
-.review-pane-footer button:first-child { background: var(--accent); color: #0f0f0f; }
+.review-pane-footer .footer-primary { background: var(--accent); color: #0f0f0f; font-weight: 600; }
+.review-pane-footer .footer-primary:hover:not(:disabled) { background: #ffffff; }
+.review-pane-footer .footer-secondary {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--bg-active);
+}
+.review-pane-footer .footer-secondary:hover:not(:disabled) { background: var(--bg-hover); }
+.review-pane-footer .footer-danger {
+  background: transparent;
+  color: var(--status-needs-you);
+  opacity: 0.8;
+  padding-left: 4px;
+}
+.review-pane-footer .footer-danger:hover { opacity: 1; background: rgba(235, 87, 87, 0.1); }
 
 .inbox-panel {
   position: absolute;

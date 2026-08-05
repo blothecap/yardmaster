@@ -112,13 +112,24 @@ export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: R
         </div>
       </div>
       <div className="review-pane-footer">
-        <button onClick={handleMerge} disabled={merging}>
-          {merging ? 'Merging…' : `Merge into ${baseBranch}`}
+        <button className="footer-danger" onClick={() => window.api.remove(sessionId)}>
+          Remove…
         </button>
-        <button onClick={handlePushPr} disabled={pushing}>
+        <div className="footer-spacer" />
+        <button
+          className="footer-secondary"
+          onClick={handlePushPr}
+          disabled={pushing || merging || files?.length === 0}
+        >
           {pushing ? 'Pushing…' : 'Push + PR'}
         </button>
-        <button onClick={() => window.api.remove(sessionId)}>Remove session…</button>
+        <button
+          className="footer-primary"
+          onClick={handleMerge}
+          disabled={merging || pushing || files?.length === 0}
+        >
+          {merging ? 'Merging…' : `Merge into ${baseBranch}`}
+        </button>
       </div>
     </div>
   )
