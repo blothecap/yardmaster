@@ -24,11 +24,6 @@ function keyOf(s: SessionView): string {
   return s.worktree?.repoRoot ?? s.cwd
 }
 
-/** Grouped = shares a directory with another session, or is a worktree copy. */
-function isGrouped(s: SessionView, all: SessionView[]): boolean {
-  return s.worktree !== null || all.some((t) => t.id !== s.id && keyOf(t) === keyOf(s))
-}
-
 function relativeTime(ts: number | null): string {
   if (!ts) return ''
   const s = Math.floor((Date.now() - ts) / 1000)
@@ -60,8 +55,7 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
       <ul>
         {props.sessions.map((s, i) => {
           const prev = props.sessions[i - 1]
-          const grouped = isGrouped(s, props.sessions)
-          const startsGroup = grouped && (!prev || keyOf(prev) !== keyOf(s))
+          const startsGroup = !prev || keyOf(prev) !== keyOf(s)
           return (
           <Fragment key={s.id}>
           {startsGroup && (
@@ -79,7 +73,7 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
               s.id === props.activeId ? 'active' : '',
               s.status === 'needs-you' ? 'needs-you' : '',
               s.worktree ? 'worktree' : '',
-              grouped ? 'grouped' : ''
+              'grouped'
             ].join(' ')}
             onClick={() => props.onSelect(s.id)}
             onDoubleClick={() => { setEditText(s.name); props.onRenameStart(s.id) }}
@@ -101,9 +95,9 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
             ) : (
               <div className="session-labels">
                 <div className="session-name">{s.name}</div>
-                {(s.worktree || !grouped) && (
+                {s.worktree && (
                   <div className="session-cwd" title={s.cwd}>
-                    {s.worktree ? `⎇ ${s.worktree.branch}` : shortCwd(s.cwd, props.home)}
+                    {`⎇ ${s.worktree.branch}`}
                   </div>
                 )}
               </div>

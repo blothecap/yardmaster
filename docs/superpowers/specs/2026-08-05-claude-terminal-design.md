@@ -153,10 +153,9 @@ with a confirmation.
   the app runs `git worktree add <repo>/.worktrees/<slug> -b <slug>` (branch =
   kebab-cased session name, uniqued on collision) and the session's cwd is the
   worktree. `.worktrees/` is registered in `.git/info/exclude` (never touches
-  the user's .gitignore). The sidebar groups any sessions that share a
-  directory (worktrees by repo root, plain sessions by cwd) under a directory
-  header — worktree rows show `⎇ branch`; singleton plain sessions stay flat.
-  Shortcuts follow the grouped visible order.
+  the user's .gitignore). The sidebar always groups sessions under their
+  directory/project heading (worktrees by repo root, plain sessions by cwd);
+  worktree rows show `⎇ branch`. Shortcuts follow the grouped visible order.
   Removing a worktree session always asks: delete copy & branch / delete copy,
   keep branch / cancel. Plain (non-worktree) sessions are unchanged.
 - Embedded shell (added post-v1): `Cmd+T` toggles a split pane below the
