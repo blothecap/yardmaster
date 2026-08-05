@@ -186,6 +186,8 @@ body {
   gap: 8px !important;
 }
 .worktree-check input { width: auto; }
+.worktree-check.unavailable { opacity: 0.55; }
+.worktree-check.unavailable em { font-style: normal; color: var(--fg-dim); }
 .dot { width: 7px; height: 7px; min-width: 7px; border-radius: 50%; }
 .dot-working { background: var(--status-working); animation: pulse 1.2s ease-in-out infinite; }
 .dot-needs-you {

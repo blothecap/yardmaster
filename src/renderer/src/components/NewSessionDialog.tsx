@@ -99,19 +99,22 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
             ))}
           </div>
         )}
-        {repoRoot && (
-          <label className="worktree-check">
-            <input
-              type="checkbox"
-              checked={worktree}
-              onChange={(e) => setWorktree(e.target.checked)}
-            />
-            <span>
-              Give this session its own isolated copy (worktree
-              {name.trim() ? `, branch: ${branchPreview(name)}` : ''})
-            </span>
-          </label>
-        )}
+        <label className={`worktree-check${repoRoot ? '' : ' unavailable'}`}>
+          <input
+            type="checkbox"
+            checked={worktree && repoRoot !== null}
+            disabled={!repoRoot}
+            onChange={(e) => setWorktree(e.target.checked)}
+          />
+          <span>
+            {repoRoot ? (
+              <>Give this session its own isolated copy (worktree
+              {name.trim() ? `, branch: ${branchPreview(name)}` : ''})</>
+            ) : (
+              <>Isolated copy (worktree) — <em>pick a git repository to enable</em></>
+            )}
+          </span>
+        </label>
         <label>
           Claude options <span className="label-hint">optional — extra flags for the claude command</span>
           <input
