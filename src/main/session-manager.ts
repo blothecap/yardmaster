@@ -15,6 +15,8 @@ export interface SpawnOpts {
   cwd: string
   settingsPath: string
   resumeId: string | null
+  cols: number
+  rows: number
 }
 
 export type PtySpawner = (opts: SpawnOpts) => PtyLike
@@ -37,6 +39,7 @@ interface InternalSession {
   spawnedAt: number
   spawnedWithResume: boolean
   closing: boolean
+  lastSize: { cols: number; rows: number } | null
 }
 
 export class SessionManager extends EventEmitter {
@@ -56,7 +59,8 @@ export class SessionManager extends EventEmitter {
         statusChangedAt: this.deps.now(),
         spawnedAt: 0,
         spawnedWithResume: false,
-        closing: false
+        closing: false,
+        lastSize: null
       })
     }
   }
@@ -83,7 +87,8 @@ export class SessionManager extends EventEmitter {
       statusChangedAt: this.deps.now(),
       spawnedAt: 0,
       spawnedWithResume: false,
-      closing: false
+      closing: false,
+      lastSize: null
     }
     this.sessions.set(meta.id, session)
     try {
@@ -158,7 +163,10 @@ export class SessionManager extends EventEmitter {
   }
 
   resize(id: string, cols: number, rows: number): void {
-    this.sessions.get(id)?.pty?.resize(cols, rows)
+    const s = this.sessions.get(id)
+    if (!s) return
+    s.lastSize = { cols, rows } // remembered even while dead — the next spawn is born at this size
+    s.pty?.resize(cols, rows)
   }
 
   handleHookEvent(appSessionId: string, event: HookEvent, payload: Record<string, unknown>): void {
@@ -193,7 +201,8 @@ export class SessionManager extends EventEmitter {
 
   private spawn(s: InternalSession, resumeId: string | null): void {
     const settingsPath = this.deps.writeSettings(s.meta.id)
-    const pty = this.deps.spawner({ cwd: s.meta.cwd, settingsPath, resumeId })
+    const { cols, rows } = s.lastSize ?? { cols: 80, rows: 24 }
+    const pty = this.deps.spawner({ cwd: s.meta.cwd, settingsPath, resumeId, cols, rows })
     s.pty = pty
     s.spawnedAt = this.deps.now()
     s.spawnedWithResume = resumeId !== null

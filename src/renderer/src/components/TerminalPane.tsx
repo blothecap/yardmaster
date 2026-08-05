@@ -16,10 +16,12 @@ export default function TerminalPane({ sessionId, visible }: TerminalPaneProps):
 
   useEffect(() => {
     const { term, fit } = createTerm()
-    term.open(containerRef.current!)
-    fit.fit()
+    // handlers must exist before the first fit(), or the initial resize event is lost
     term.onData((data) => window.api.input(sessionId, data))
     term.onResize(({ cols, rows }) => window.api.resize(sessionId, cols, rows))
+    term.open(containerRef.current!)
+    fit.fit()
+    window.api.resize(sessionId, term.cols, term.rows)
     registerTerminal(sessionId, term)
     termRef.current = term
     fitRef.current = fit

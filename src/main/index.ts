@@ -108,8 +108,8 @@ app.whenReady().then(async () => {
       const args = ['--settings', opts.settingsPath, ...(opts.resumeId ? ['--resume', opts.resumeId] : [])]
       const proc = pty.spawn(claudePath, args, {
         name: 'xterm-256color',
-        cols: 80,
-        rows: 24,
+        cols: opts.cols,
+        rows: opts.rows,
         cwd: opts.cwd,
         env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>
       })

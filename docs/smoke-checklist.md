@@ -6,6 +6,7 @@ Run through this before declaring a build good. Prereq: `claude` installed and l
 - [ ] `npm run dev` opens the app with sidebar + empty state
 - [ ] ⌘N opens dialog; create session "smoke-a" in a real repo dir
 - [ ] Claude boots in the pane; typing + Enter gets a response
+- [ ] Claude's TUI fills the whole pane width immediately — on create, after relaunch/resume, and without resizing the window first
 - [ ] Dot: orange while working, green after response (Stop hook)
 - [ ] Trigger a permission prompt (ask Claude to run a shell command); dot turns red (needs-you)
 - [ ] Create "smoke-b"; ⌘1/⌘2, ⌘J/⌘K switch instantly; scrollback intact after switching

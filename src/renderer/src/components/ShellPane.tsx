@@ -16,10 +16,12 @@ export default function ShellPane({ sessionId, visible }: ShellPaneProps): React
 
   useEffect(() => {
     const { term, fit } = createTerm()
-    term.open(containerRef.current!)
-    fit.fit()
+    // handlers must exist before the first fit(), or the initial resize event is lost
     term.onData((data) => window.api.shellInput(sessionId, data))
     term.onResize(({ cols, rows }) => window.api.shellResize(sessionId, cols, rows))
+    term.open(containerRef.current!)
+    fit.fit()
+    window.api.shellResize(sessionId, term.cols, term.rows)
     const registryKey = `shell:${sessionId}`
     registerTerminal(registryKey, term)
     termRef.current = term

@@ -48,7 +48,13 @@ describe('create', () => {
     const m = makeManager()
     const view = m.create('fix-auth', '/tmp/proj')
     expect(spawns).toHaveLength(1)
-    expect(spawns[0].opts).toEqual({ cwd: '/tmp/proj', settingsPath: `/fake/settings-${view.id}.json`, resumeId: null })
+    expect(spawns[0].opts).toEqual({
+      cwd: '/tmp/proj',
+      settingsPath: `/fake/settings-${view.id}.json`,
+      resumeId: null,
+      cols: 80,
+      rows: 24
+    })
     expect(view.status).toBe('idle')
     expect(store.load().sessions).toHaveLength(1)
   })
@@ -187,6 +193,28 @@ describe('resume fallback', () => {
     spawns[1].pty.exitCb!({ exitCode: 1 })
     expect(spawns).toHaveLength(2)
     expect(m.list()[0].status).toBe('exited')
+  })
+})
+
+describe('spawn size', () => {
+  it('respawn uses the last known terminal size', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp/proj')
+    m.resize(v.id, 120, 40)
+    m.close(v.id)
+    m.activate(v.id)
+    expect(spawns[1].opts.cols).toBe(120)
+    expect(spawns[1].opts.rows).toBe(40)
+  })
+
+  it('resize while exited is remembered for the next spawn', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp/proj')
+    m.close(v.id)
+    m.resize(v.id, 100, 50) // pane reports size while pty is dead
+    m.activate(v.id)
+    expect(spawns[1].opts.cols).toBe(100)
+    expect(spawns[1].opts.rows).toBe(50)
   })
 })
 
