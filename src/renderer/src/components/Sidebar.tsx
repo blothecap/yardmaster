@@ -39,6 +39,30 @@ function relativeTime(ts: number | null): string {
 export default function Sidebar(props: SidebarProps): React.JSX.Element {
   const dragId = useRef<string | null>(null)
   const [editText, setEditText] = useState('')
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+
+  // Never leave the active session hidden inside a collapsed group
+  useEffect(() => {
+    if (!props.activeId) return
+    const active = props.sessions.find((s) => s.id === props.activeId)
+    if (!active) return
+    const k = keyOf(active)
+    setCollapsedGroups((prev) => {
+      if (!prev.has(k)) return prev
+      const n = new Set(prev)
+      n.delete(k)
+      return n
+    })
+  }, [props.activeId, props.sessions])
+
+  const toggleGroup = (k: string): void => {
+    setCollapsedGroups((prev) => {
+      const n = new Set(prev)
+      if (n.has(k)) n.delete(k)
+      else n.add(k)
+      return n
+    })
+  }
   const [, setTick] = useState(0)
 
   // Relative timestamps ("3m", "1h") go stale if we only recompute on props changes;
@@ -74,14 +98,27 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
       <ul>
         {props.sessions.map((s, i) => {
           const prev = props.sessions[i - 1]
-          const startsGroup = !prev || keyOf(prev) !== keyOf(s)
+          const groupKey = keyOf(s)
+          const startsGroup = !prev || keyOf(prev) !== groupKey
+          const isCollapsed = collapsedGroups.has(groupKey)
+          const members = props.sessions.filter((t) => keyOf(t) === groupKey)
           return (
           <Fragment key={s.id}>
           {startsGroup && (
-            <li className="repo-group-header" title={keyOf(s)}>
-              {shortCwd(keyOf(s), props.home)}
+            <li
+              className="repo-group-header"
+              title={groupKey}
+              onClick={() => toggleGroup(groupKey)}
+            >
+              <span className={`chevron${isCollapsed ? '' : ' open'}`}>▸</span>
+              <span className="group-name">{shortCwd(groupKey, props.home)}</span>
+              {isCollapsed && members.some((t) => t.status === 'needs-you') && (
+                <span className="dot dot-needs-you" />
+              )}
+              {isCollapsed && <span className="group-count">{members.length}</span>}
             </li>
           )}
+          {!isCollapsed && (
           <li
             draggable
             onDragStart={() => { dragId.current = s.id }}
@@ -147,6 +184,7 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
               ×
             </button>
           </li>
+          )}
           </Fragment>
           )
         })}
