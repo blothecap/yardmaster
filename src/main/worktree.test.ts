@@ -54,6 +54,17 @@ describe('createWorktree', () => {
     expect(git(repo, 'rev-parse', '--verify', 'refs/heads/fix-auth')).toBeTruthy()
   })
 
+  it('records the branch checked out in repoRoot as baseBranch', async () => {
+    const wt = await createWorktree(fs.realpathSync(repo), 'Fix Auth')
+    expect(wt.baseBranch).toBe('main')
+  })
+
+  it('falls back to "main" for baseBranch when repoRoot is in detached HEAD', async () => {
+    git(repo, 'checkout', '-q', '--detach', 'main')
+    const wt = await createWorktree(fs.realpathSync(repo), 'Fix Auth')
+    expect(wt.baseBranch).toBe('main')
+  })
+
   it('registers .worktrees/ in .git/info/exclude so git status stays clean', async () => {
     await createWorktree(fs.realpathSync(repo), 'x')
     const exclude = fs.readFileSync(path.join(repo, '.git', 'info', 'exclude'), 'utf8')

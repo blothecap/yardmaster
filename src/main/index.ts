@@ -177,7 +177,7 @@ app.whenReady().then(async () => {
       if (!repoRoot) throw new Error(`not a git repository: ${cwd}`)
       const wt = await createWorktree(repoRoot, name)
       try {
-        return manager!.create(name, wt.path, { repoRoot, branch: wt.branch })
+        return manager!.create(name, wt.path, { repoRoot, branch: wt.branch, baseBranch: wt.baseBranch })
       } catch (err) {
         await removeWorktree(repoRoot, wt.path, wt.branch, true).catch(() => {})
         throw err

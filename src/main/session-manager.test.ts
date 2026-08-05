@@ -283,15 +283,30 @@ describe('spawn size', () => {
 describe('worktree metadata', () => {
   it('create stores and persists worktree info', () => {
     const m = makeManager()
-    const v = m.create('wt', '/repo/.worktrees/wt', { repoRoot: '/repo', branch: 'wt' })
-    expect(v.worktree).toEqual({ repoRoot: '/repo', branch: 'wt' })
-    expect(store.load().sessions[0].worktree).toEqual({ repoRoot: '/repo', branch: 'wt' })
+    const v = m.create('wt', '/repo/.worktrees/wt', { repoRoot: '/repo', branch: 'wt', baseBranch: 'main' })
+    expect(v.worktree).toEqual({ repoRoot: '/repo', branch: 'wt', baseBranch: 'main' })
+    expect(store.load().sessions[0].worktree).toEqual({ repoRoot: '/repo', branch: 'wt', baseBranch: 'main' })
   })
 
   it('tolerates pre-worktree sessions.json entries', () => {
     store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: null, order: 0 } as never])
     const m = makeManager()
     expect(m.list()[0].worktree).toBeNull()
+  })
+
+  it('defaults baseBranch to "main" for pre-baseBranch worktree entries', () => {
+    store.save([
+      {
+        id: 'x1',
+        name: 'old',
+        cwd: '/tmp/wt',
+        claudeSessionId: null,
+        order: 0,
+        worktree: { repoRoot: '/tmp', branch: 'old' }
+      } as never
+    ])
+    const m = makeManager()
+    expect(m.list()[0].worktree).toEqual({ repoRoot: '/tmp', branch: 'old', baseBranch: 'main' })
   })
 })
 

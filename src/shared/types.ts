@@ -11,7 +11,7 @@ export interface SessionMeta {
   cwd: string // for worktree sessions this is the worktree path
   claudeSessionId: string | null
   order: number
-  worktree: { repoRoot: string; branch: string } | null
+  worktree: { repoRoot: string; branch: string; baseBranch: string } | null
 }
 
 /** Pushed to the renderer */

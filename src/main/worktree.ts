@@ -5,6 +5,7 @@ import path from 'node:path'
 export interface WorktreeInfo {
   path: string
   branch: string
+  baseBranch: string
 }
 
 function git(cwd: string, ...args: string[]): Promise<string> {
@@ -58,8 +59,10 @@ export async function createWorktree(repoRoot: string, sessionName: string): Pro
   for (let i = 2; await branchExists(repoRoot, branch); i++) branch = `${base}-${i}`
   await ensureExcluded(repoRoot)
   const wtPath = path.join(repoRoot, '.worktrees', branch)
+  const currentBranch = await git(repoRoot, 'rev-parse', '--abbrev-ref', 'HEAD')
+  const baseBranch = currentBranch === 'HEAD' ? 'main' : currentBranch
   await git(repoRoot, 'worktree', 'add', wtPath, '-b', branch)
-  return { path: wtPath, branch }
+  return { path: wtPath, branch, baseBranch }
 }
 
 export async function removeWorktree(

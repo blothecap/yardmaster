@@ -61,7 +61,11 @@ export class SessionManager extends EventEmitter {
     this.deps = { now: Date.now, ...deps }
     for (const meta of this.deps.store.load().sessions) {
       this.sessions.set(meta.id, {
-        meta: { ...meta, worktree: meta.worktree ?? null }, // tolerate pre-worktree sessions.json
+        meta: {
+          ...meta,
+          // tolerate pre-worktree sessions.json entries, and pre-baseBranch worktree entries
+          worktree: meta.worktree ? { ...meta.worktree, baseBranch: meta.worktree.baseBranch ?? 'main' } : null
+        },
         status: 'exited',
         pty: null,
         lastActivityAt: null,

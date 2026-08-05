@@ -6,7 +6,7 @@ import { Store } from './store'
 import type { SessionMeta } from '../shared/types'
 
 const sample: SessionMeta[] = [
-  { id: 'a1', name: 'fix-auth', cwd: '/tmp/proj', claudeSessionId: 'cs-1', order: 0, worktree: { repoRoot: '/tmp/proj', branch: 'fix-auth' } },
+  { id: 'a1', name: 'fix-auth', cwd: '/tmp/proj', claudeSessionId: 'cs-1', order: 0, worktree: { repoRoot: '/tmp/proj', branch: 'fix-auth', baseBranch: 'main' } },
   { id: 'b2', name: 'refactor', cwd: '/tmp/other', claudeSessionId: null, order: 1, worktree: null }
 ]
 
