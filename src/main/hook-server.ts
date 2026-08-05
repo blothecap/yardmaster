@@ -40,7 +40,8 @@ export class HookServer {
     const [root, appSessionId, event] = parts
     if (req.method !== 'POST' || root !== 'hook' || !appSessionId || !HOOK_EVENTS.includes(event as HookEvent)) {
       res.statusCode = 404
-      return res.end()
+      res.end()
+      return
     }
     let body = ''
     req.on('data', (chunk) => { body += chunk })
