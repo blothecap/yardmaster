@@ -40,6 +40,20 @@ function createWindow(): void {
     win.loadFile(path.join(import.meta.dirname, '../renderer/index.html'))
   }
   win.on('closed', () => { win = null })
+
+  // Cmd+Up/Down are macOS text-editing keys (document start/end), so the focused
+  // terminal textarea consumes them before menu accelerators fire. Intercept them
+  // ahead of the page instead — this is their only binding (no menu item).
+  win.webContents.on('before-input-event', (event, input) => {
+    if (
+      input.type === 'keyDown' &&
+      input.meta && !input.alt && !input.shift && !input.control &&
+      (input.key === 'ArrowUp' || input.key === 'ArrowDown')
+    ) {
+      sendShortcut({ type: input.key === 'ArrowUp' ? 'prev' : 'next' })
+      event.preventDefault()
+    }
+  })
 }
 
 function safeSend(channel: string, payload?: unknown): void {
@@ -77,8 +91,6 @@ function buildMenu(): void {
         { label: 'Previous Session', accelerator: 'Cmd+K', click: () => sendShortcut({ type: 'prev' }) },
         { label: 'Next Session (alt)', accelerator: 'Cmd+Shift+]', click: () => sendShortcut({ type: 'next' }) },
         { label: 'Previous Session (alt)', accelerator: 'Cmd+Shift+[', click: () => sendShortcut({ type: 'prev' }) },
-        { label: 'Next Session (down)', accelerator: 'Cmd+Down', click: () => sendShortcut({ type: 'next' }) },
-        { label: 'Previous Session (up)', accelerator: 'Cmd+Up', click: () => sendShortcut({ type: 'prev' }) },
         { label: 'Waiting on You…', accelerator: 'Cmd+E', click: () => sendShortcut({ type: 'toggle-inbox' }) },
         { type: 'separator' },
         { label: 'Toggle Sidebar', accelerator: 'Cmd+B', click: () => sendShortcut({ type: 'toggle-sidebar' }) }
