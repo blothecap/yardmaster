@@ -21,7 +21,7 @@ function createWindow(): void {
     title: 'Claude Terminal',
     backgroundColor: '#16161e',
     webPreferences: {
-      preload: path.join(import.meta.dirname, '../preload/index.js'),
+      preload: path.join(import.meta.dirname, '../preload/index.mjs'),
       contextIsolation: true,
       sandbox: false
     }
