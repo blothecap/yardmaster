@@ -110,8 +110,9 @@ Three layers in one Electron app. No daemon, no tmux, one window.
 
 ## Session lifecycle
 
-**Create (`Cmd+N` or button):** prompt for name + working directory (recent
-directories offered first) → write per-session settings file → spawn
+**Create (`Cmd+N` or button):** prompt for name + working directory (the
+cwds of existing/past sessions in `sessions.json` offered as recents, plus a
+native directory picker) → write per-session settings file → spawn
 `claude --settings …` in that cwd.
 
 **Status model** — hook-driven, four states:
