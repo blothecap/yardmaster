@@ -63,6 +63,7 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
             ].join(' ')}
             onClick={() => props.onSelect(s.id)}
             onDoubleClick={() => { setEditText(s.name); props.onRenameStart(s.id) }}
+            onContextMenu={(e) => { e.preventDefault(); window.api.contextMenu(s.id) }}
           >
             <span className={`dot dot-${s.status}`} />
             {props.renamingId === s.id ? (

@@ -146,6 +146,8 @@ with a confirmation.
   rest. No tabs, no splits — the sidebar is the navigation.
 - Sidebar row: status dot · session name · truncated cwd (`~/dev/api-server`)
   · subtle last-activity timestamp. Drag to reorder; double-click to rename.
+- Right-click on a row opens a native context menu (added post-v1): Rename,
+  Close (live) or Relaunch (exited), and Remove… with a native confirm dialog.
 - v1 styling minimal: one good monospace font, dark theme only.
 
 ### Keyboard shortcuts (hardcoded in v1)
@@ -154,6 +156,7 @@ with a confirmation.
 |-----------------------------------------|-----------------------------------------|
 | `Cmd+1`…`Cmd+9`                         | Jump to session by sidebar position     |
 | `Cmd+J` / `Cmd+K`, `Cmd+Shift+]` / `[`  | Next / previous session                 |
+| `Cmd+↓` / `Cmd+↑`                       | Next / previous session (added post-v1) |
 | `Cmd+N`                                 | New session                             |
 | `Cmd+R`                                 | Rename current session                  |
 | `Cmd+W`                                 | Close current session                   |

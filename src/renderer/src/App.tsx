@@ -51,7 +51,8 @@ export default function App(): React.JSX.Element {
     const offFocus = window.api.onFocus((id) => switchTo(id))
     const offShortcut = window.api.onShortcut((action) => handleShortcut(action))
     const offData = window.api.onData((id, data) => getTerminal(id)?.write(data))
-    return () => { offChanged(); offFocus(); offShortcut(); offData() }
+    const offStartRename = window.api.onStartRename((id) => setRenamingId(id))
+    return () => { offChanged(); offFocus(); offShortcut(); offData(); offStartRename() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

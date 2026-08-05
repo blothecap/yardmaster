@@ -22,6 +22,12 @@ const api = {
   resize: (id: string, cols: number, rows: number): void =>
     ipcRenderer.send('sessions:resize', { id, cols, rows }),
   pickDirectory: (): Promise<string | null> => ipcRenderer.invoke('app:pickDirectory'),
+  contextMenu: (id: string): void => ipcRenderer.send('sessions:contextMenu', id),
+  onStartRename: (cb: (id: string) => void): (() => void) => {
+    const h = (_e: Electron.IpcRendererEvent, id: string): void => cb(id)
+    ipcRenderer.on('sessions:startRename', h)
+    return () => ipcRenderer.removeListener('sessions:startRename', h)
+  },
   onChanged: (cb: (views: SessionView[]) => void): (() => void) => {
     const h = (_e: Electron.IpcRendererEvent, views: SessionView[]): void => cb(views)
     ipcRenderer.on('sessions:changed', h)

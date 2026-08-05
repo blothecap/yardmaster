@@ -10,6 +10,8 @@ Run through this before declaring a build good. Prereq: `claude` installed and l
 - [ ] Trigger a permission prompt (ask Claude to run a shell command); dot turns red (needs-you)
 - [ ] Create "smoke-b"; ⌘1/⌘2, ⌘J/⌘K switch instantly; scrollback intact after switching
 - [ ] Double-click rename works; drag reorder works; ⌘B toggles sidebar
+- [ ] ⌘↑/⌘↓ switch sessions (same as ⌘K/⌘J)
+- [ ] Right-click a row: Rename starts inline edit; Close appears for live sessions, Relaunch for exited; Remove… shows native confirm
 - [ ] ⌘E jumps to the needs-you session
 
 ## Notifications

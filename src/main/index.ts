@@ -69,6 +69,8 @@ function buildMenu(): void {
         { label: 'Previous Session', accelerator: 'Cmd+K', click: () => sendShortcut({ type: 'prev' }) },
         { label: 'Next Session (alt)', accelerator: 'Cmd+Shift+]', click: () => sendShortcut({ type: 'next' }) },
         { label: 'Previous Session (alt)', accelerator: 'Cmd+Shift+[', click: () => sendShortcut({ type: 'prev' }) },
+        { label: 'Next Session (down)', accelerator: 'Cmd+Down', click: () => sendShortcut({ type: 'next' }) },
+        { label: 'Previous Session (up)', accelerator: 'Cmd+Up', click: () => sendShortcut({ type: 'prev' }) },
         { label: 'Oldest Needs-You', accelerator: 'Cmd+E', click: () => sendShortcut({ type: 'oldest-needs-you' }) },
         { type: 'separator' },
         { label: 'Toggle Sidebar', accelerator: 'Cmd+B', click: () => sendShortcut({ type: 'toggle-sidebar' }) }
@@ -159,6 +161,34 @@ app.whenReady().then(async () => {
     ipcMain.handle('sessions:close', (_e, id) => manager!.close(id))
     ipcMain.handle('sessions:remove', (_e, id) => manager!.remove(id))
     ipcMain.handle('sessions:reorder', (_e, ids) => manager!.reorder(ids))
+    ipcMain.on('sessions:contextMenu', (_e, id: string) => {
+      const session = manager!.list().find((s) => s.id === id)
+      if (!session || !win || win.isDestroyed()) return
+      const live = session.status !== 'exited'
+      const template: Electron.MenuItemConstructorOptions[] = [
+        { label: 'Rename', click: () => safeSend('sessions:startRename', id) },
+        live
+          ? { label: 'Close', click: () => manager!.close(id) }
+          : { label: 'Relaunch', click: () => safeSend('sessions:focus', id) },
+        { type: 'separator' },
+        {
+          label: 'Remove…',
+          click: async () => {
+            if (!win || win.isDestroyed()) return
+            const r = await dialog.showMessageBox(win, {
+              type: 'warning',
+              buttons: ['Remove', 'Cancel'],
+              defaultId: 1,
+              cancelId: 1,
+              message: `Remove session "${session.name}"?`,
+              detail: 'This deletes it from the sidebar. The Claude conversation itself is not deleted.'
+            })
+            if (r.response === 0) manager!.remove(id)
+          }
+        }
+      ]
+      Menu.buildFromTemplate(template).popup({ window: win })
+    })
     ipcMain.on('sessions:input', (_e, { id, data }) => manager!.write(id, data))
     ipcMain.on('sessions:resize', (_e, { id, cols, rows }) => manager!.resize(id, cols, rows))
     ipcMain.handle('app:pickDirectory', async () => {
