@@ -106,7 +106,20 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <span>Sessions</span>
+        <span className="brand">
+          <svg width="14" height="14" viewBox="0 0 512 512" aria-hidden="true">
+            <g stroke="currentColor" strokeWidth="44" strokeLinecap="round" fill="none">
+              <path d="M256 460 V310" />
+              <path d="M256 310 V150" />
+              <path d="M256 310 C256 245 148 242 148 160" />
+              <path d="M256 310 C256 245 364 242 364 160" />
+            </g>
+            <circle cx="256" cy="96" r="40" fill="#d5a458" />
+            <circle cx="148" cy="106" r="40" fill="#5cb176" />
+            <circle cx="364" cy="106" r="40" fill="#eb5757" />
+          </svg>
+          Switchyard
+        </span>
         <button className="new-btn" title="New session (⌘N)" onClick={props.onNew}>+</button>
       </div>
       <ul>

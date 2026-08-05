@@ -112,6 +112,9 @@ app.whenReady().then(async () => {
   try {
     buildMenu()
     migrateLegacyUserData()
+    try {
+      app.dock?.setIcon(path.join(app.getAppPath(), 'assets', 'icon.png'))
+    } catch { /* dev nicety only; packaged builds get the bundled .icns */ }
 
     const claudePath = await resolveClaudePath()
     const hookServer = new HookServer()

@@ -58,6 +58,15 @@ body {
   font-size: 11px;
   letter-spacing: 0.08em;
 }
+.sidebar-header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: 0.1em;
+}
+.sidebar-header .brand svg { color: var(--fg-dim); }
 .new-btn, .remove-btn {
   background: none;
   border: none;
