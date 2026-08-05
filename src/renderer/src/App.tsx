@@ -21,6 +21,8 @@ export default function App(): React.JSX.Element {
   const [dialogPrefill, setDialogPrefill] = useState<{ dir: string; worktree: boolean } | null>(null)
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
   const [rightPane, setRightPane] = useState<'inbox' | 'changes' | 'shell' | null>(null)
+  const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('ct.sidebarWidth')) || 240)
+  const [rightWidth, setRightWidth] = useState(() => Number(localStorage.getItem('ct.rightWidth')) || 380)
 
   // Sidebar groups sessions sharing a directory (worktrees by repo root, plain by cwd);
   // shortcuts follow the same visible order
@@ -47,6 +49,29 @@ export default function App(): React.JSX.Element {
   activeIdRef.current = activeId
   const rightPaneRef = useRef(rightPane)
   rightPaneRef.current = rightPane
+  const sidebarWidthRef = useRef(sidebarWidth)
+  sidebarWidthRef.current = sidebarWidth
+  const rightWidthRef = useRef(rightWidth)
+  rightWidthRef.current = rightWidth
+
+  const startVDrag = useCallback((which: 'left' | 'right', e: React.MouseEvent) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = which === 'left' ? sidebarWidthRef.current : rightWidthRef.current
+    const onMove = (ev: MouseEvent): void => {
+      const d = ev.clientX - startX
+      if (which === 'left') setSidebarWidth(Math.min(420, Math.max(180, startW + d)))
+      else setRightWidth(Math.min(720, Math.max(280, startW - d)))
+    }
+    const onUp = (): void => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      localStorage.setItem('ct.sidebarWidth', String(sidebarWidthRef.current))
+      localStorage.setItem('ct.rightWidth', String(rightWidthRef.current))
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [])
 
   const switchTo = useCallback((id: string) => {
     setActiveId(id)
@@ -164,7 +189,10 @@ export default function App(): React.JSX.Element {
   }
 
   return (
-    <div className="app layout">
+    <div
+      className="app layout"
+      style={{ '--sidebar-w': `${sidebarWidth}px`, '--right-w': `${rightWidth}px` } as React.CSSProperties}
+    >
       {!collapsed && (
         <Sidebar
           sessions={displaySessions}
@@ -182,6 +210,7 @@ export default function App(): React.JSX.Element {
           onNewInProject={(dir, worktree) => { setDialogPrefill({ dir, worktree }); setDialogOpen(true) }}
         />
       )}
+      {!collapsed && <div className="v-divider" onMouseDown={(e) => startVDrag('left', e)} />}
       <main className="terminal-area">
         {corruptBackup && (
           <div className="banner">
@@ -203,6 +232,7 @@ export default function App(): React.JSX.Element {
           )}
         </div>
       </main>
+      {rightPane && <div className="v-divider" onMouseDown={(e) => startVDrag('right', e)} />}
       {rightPane && (
         <aside className="right-pane">
           {rightPane === 'inbox' && (
