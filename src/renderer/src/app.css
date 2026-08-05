@@ -1,0 +1,23 @@
+:root {
+  --bg: #16161e;
+  --bg-sidebar: #1a1b26;
+  --bg-hover: #24283b;
+  --bg-active: #2f334d;
+  --fg: #c0caf5;
+  --fg-dim: #565f89;
+  --accent: #7aa2f7;
+  --status-working: #e0af68;
+  --status-needs-you: #f7768e;
+  --status-idle: #9ece6a;
+  --status-exited: #565f89;
+  --font-mono: 'SF Mono', 'Menlo', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root, .app { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  user-select: none;
+}

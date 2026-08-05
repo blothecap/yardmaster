@@ -90,10 +90,11 @@ docs/smoke-checklist.md        # manual E2E checklist
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@vitejs/plugin-react": "^6.0.0",
+    "@vitejs/plugin-react": "^5.1.0",
     "electron": "^43.0.0",
     "electron-vite": "^5.0.0",
     "typescript": "^5.9.0",
+    "vite": "^7.0.0",
     "vitest": "^4.1.0"
   }
 }
