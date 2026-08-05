@@ -13,6 +13,16 @@
   --font-mono: 'SF Mono', 'Menlo', monospace;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #2e2e2e;
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: #454545; background-clip: padding-box; border: 2px solid transparent; }
+::-webkit-scrollbar-corner { background: transparent; }
 html, body, #root, .app { height: 100%; }
 body {
   background: var(--bg);
