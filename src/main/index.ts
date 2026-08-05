@@ -250,6 +250,7 @@ app.whenReady().then(async () => {
       return true
     })
     ipcMain.handle('shell:isRunning', (_e, id: string) => shellManager!.isRunning(id))
+    ipcMain.handle('shell:buffer', (_e, id: string) => shellManager!.getBuffer(id))
     ipcMain.on('shell:input', (_e, { id, data }) => shellManager!.write(id, data))
     ipcMain.on('shell:resize', (_e, { id, cols, rows }) => shellManager!.resize(id, cols, rows))
     ipcMain.handle('sessions:reorder', (_e, ids) => manager!.reorder(ids))

@@ -7,19 +7,28 @@ export type ShellSpawner = (cwd: string) => PtyLike
  * One scratch shell per session: lazy, no status tracking, no persistence.
  * Dies with its session or the app.
  */
+const SHELL_BUFFER_CAP = 200_000
+
 export class ShellManager extends EventEmitter {
   private shells = new Map<string, PtyLike>()
+  private buffers = new Map<string, string>()
 
   constructor(private deps: { spawner: ShellSpawner }) {
     super()
+  }
+
+  getBuffer(sessionId: string): string {
+    return this.buffers.get(sessionId) ?? ''
   }
 
   ensure(sessionId: string, cwd: string): void {
     if (this.shells.has(sessionId)) return
     const pty = this.deps.spawner(cwd)
     this.shells.set(sessionId, pty)
+    this.buffers.set(sessionId, '') // fresh shell paints from scratch
     pty.onData((chunk) => {
       if (this.shells.get(sessionId) !== pty) return
+      this.buffers.set(sessionId, ((this.buffers.get(sessionId) ?? '') + chunk).slice(-SHELL_BUFFER_CAP))
       this.emit('data', sessionId, chunk)
     })
     pty.onExit(() => {

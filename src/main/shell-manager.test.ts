@@ -101,6 +101,32 @@ describe('ShellManager', () => {
     expect(m.isRunning('s1')).toBe(true)
   })
 
+  it('buffers output for replay and returns it from getBuffer', () => {
+    m.ensure('s1', '/tmp')
+    spawns[0].pty.dataCb!('line one\r\n')
+    spawns[0].pty.dataCb!('line two')
+    expect(m.getBuffer('s1')).toBe('line one\r\nline two')
+    expect(m.getBuffer('ghost')).toBe('')
+  })
+
+  it('caps the replay buffer keeping the newest output', () => {
+    m.ensure('s1', '/tmp')
+    spawns[0].pty.dataCb!('x'.repeat(200_000))
+    spawns[0].pty.dataCb!('TAIL')
+    expect(m.getBuffer('s1').length).toBe(200_000)
+    expect(m.getBuffer('s1').endsWith('TAIL')).toBe(true)
+  })
+
+  it('clears the buffer when a fresh shell spawns', () => {
+    m.ensure('s1', '/tmp')
+    spawns[0].pty.dataCb!('old')
+    spawns[0].pty.exitCb!({ exitCode: 0 })
+    m.ensure('s1', '/tmp')
+    expect(m.getBuffer('s1')).toBe('')
+    spawns[1].pty.dataCb!('new')
+    expect(m.getBuffer('s1')).toBe('new')
+  })
+
   it('disposeAll kills every running shell', () => {
     m.ensure('s1', '/a')
     m.ensure('s2', '/b')

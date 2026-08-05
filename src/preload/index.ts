@@ -38,6 +38,7 @@ const api = {
   contextMenu: (id: string): void => ipcRenderer.send('sessions:contextMenu', id),
   shellEnsure: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:ensure', id),
   shellIsRunning: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:isRunning', id),
+  shellBuffer: (id: string): Promise<string> => ipcRenderer.invoke('shell:buffer', id),
   shellInput: (id: string, data: string): void => ipcRenderer.send('shell:input', { id, data }),
   shellResize: (id: string, cols: number, rows: number): void =>
     ipcRenderer.send('shell:resize', { id, cols, rows }),

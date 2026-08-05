@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { Terminal } from '@xterm/xterm'
 import type { FitAddon } from '@xterm/addon-fit'
 import { createTerm } from '../xterm-factory'
-import { registerTerminal, unregisterTerminal } from '../terminal-registry'
+import { getTerminal, registerTerminal, unregisterTerminal } from '../terminal-registry'
 
 interface ShellPaneProps {
   sessionId: string
@@ -22,18 +22,31 @@ export default function ShellPane({ sessionId, visible }: ShellPaneProps): React
     term.open(containerRef.current!)
     fit.fit()
     window.api.shellResize(sessionId, term.cols, term.rows)
-    const registryKey = `shell:${sessionId}`
-    registerTerminal(registryKey, term)
     termRef.current = term
     fitRef.current = fit
+
+    // Replay buffered output (pane switches unmount this component; the shell keeps
+    // running in main) before going live — register only after replay for ordering.
+    const registryKey = `shell:${sessionId}`
+    let disposed = false
+    window.api.shellBuffer(sessionId).then((buf) => {
+      if (disposed) return
+      if (buf) term.write(buf)
+      registerTerminal(registryKey, term)
+    })
 
     const observer = new ResizeObserver(() => {
       if (containerRef.current!.offsetWidth > 0) fitRef.current?.fit()
     })
     observer.observe(containerRef.current!)
     return () => {
+      disposed = true
       observer.disconnect()
-      unregisterTerminal(registryKey)
+      if (getTerminal(registryKey) === term) {
+        unregisterTerminal(registryKey) // disposes via the registry
+      } else {
+        term.dispose() // replay never completed; never registered
+      }
     }
   }, [sessionId])
 
