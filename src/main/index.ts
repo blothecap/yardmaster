@@ -26,7 +26,7 @@ function createWindow(): void {
     height: 820,
     minWidth: 800,
     minHeight: 500,
-    title: 'Claude Terminal',
+    title: 'Switchyard',
     backgroundColor: '#0f0f0f',
     webPreferences: {
       preload: path.join(import.meta.dirname, '../preload/index.mjs'),
@@ -89,9 +89,29 @@ function buildMenu(): void {
   Menu.setApplicationMenu(menu)
 }
 
+app.setName('switchyard')
+
+/**
+ * The app was previously named claude-terminal; carry existing sessions and
+ * per-session settings over to the new identity's userData dir once.
+ */
+function migrateLegacyUserData(): void {
+  const userData = app.getPath('userData')
+  const legacy = path.join(app.getPath('appData'), 'claude-terminal')
+  try {
+    if (!fs.existsSync(path.join(userData, 'sessions.json')) && fs.existsSync(path.join(legacy, 'sessions.json'))) {
+      fs.mkdirSync(userData, { recursive: true })
+      fs.cpSync(legacy, userData, { recursive: true })
+    }
+  } catch {
+    // migration is best-effort; a fresh start is the fallback
+  }
+}
+
 app.whenReady().then(async () => {
   try {
     buildMenu()
+    migrateLegacyUserData()
 
     const claudePath = await resolveClaudePath()
     const hookServer = new HookServer()

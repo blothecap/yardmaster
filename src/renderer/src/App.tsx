@@ -180,7 +180,7 @@ export default function App(): React.JSX.Element {
       <div className="app fullscreen-message">
         <h1>claude not found</h1>
         <p>
-          Claude Terminal could not find the <code>claude</code> binary on your PATH.
+          Switchyard could not find the <code>claude</code> binary on your PATH.
           Install Claude Code (<code>npm install -g @anthropic-ai/claude-code</code>) or make
           sure your login shell exposes it, then relaunch this app.
         </p>

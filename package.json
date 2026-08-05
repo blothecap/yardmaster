@@ -1,5 +1,5 @@
 {
-  "name": "claude-terminal",
+  "name": "switchyard",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -37,5 +37,7 @@
     "electron@43.3.0": true,
     "@electron/rebuild@4.2.0": true,
     "fsevents@2.3.3": true
-  }
+  },
+  "productName": "Switchyard",
+  "description": "Switchyard \u2014 a cockpit for running and managing multiple Claude Code sessions"
 }
