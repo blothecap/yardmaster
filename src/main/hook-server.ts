@@ -16,6 +16,7 @@ export class HookServer {
   }
 
   start(): Promise<number> {
+    if (this.server) return Promise.reject(new Error('HookServer already started'))
     return new Promise((resolve, reject) => {
       this.server = http.createServer((req, res) => this.handle(req, res))
       this.server.once('error', reject)

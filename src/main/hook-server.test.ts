@@ -50,4 +50,8 @@ describe('HookServer', () => {
     expect(await post('/nope', '{}')).toBe(404)
     expect(await post('/hook/onlyone', '{}')).toBe(404)
   })
+
+  it('rejects a second start() while running', async () => {
+    await expect(server.start()).rejects.toThrow(/already started/)
+  })
 })
