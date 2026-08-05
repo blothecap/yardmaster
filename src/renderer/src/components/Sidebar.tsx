@@ -15,6 +15,21 @@ interface SidebarProps {
   onReorder(ids: string[]): void
   onNew(): void
   onNewInProject(dir: string, worktree: boolean): void
+  onOpenInbox(): void
+}
+
+function totalUsage(sessions: SessionView[]): string | null {
+  let usd = 0
+  let hasUsd = false
+  let tokens = 0
+  for (const s of sessions) {
+    if (!s.cost) continue
+    if (s.cost.costUsd !== null) { usd += s.cost.costUsd; hasUsd = true }
+    tokens += s.cost.inputTokens + s.cost.outputTokens
+  }
+  if (hasUsd) return `$${usd.toFixed(2)}`
+  if (tokens > 0) return `${Math.round(tokens / 1000)}k tok`
+  return null
 }
 
 function shortCwd(cwd: string, home: string): string {
@@ -241,6 +256,45 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
           )
         })}
       </ul>
+      <div className="sidebar-footer">
+        {(() => {
+          const working = props.sessions.filter((s) => s.status === 'working').length
+          const waiting = props.sessions.filter((s) => s.status === 'needs-you').length
+          const idle = props.sessions.filter((s) => s.status === 'idle').length
+          const usage = totalUsage(props.sessions)
+          return (
+            <>
+              <div className="fleet-counts">
+                {working > 0 && (
+                  <span className="fleet-count" title={`${working} working`}>
+                    <span className="dot dot-working" />{working}
+                  </span>
+                )}
+                {waiting > 0 && (
+                  <button
+                    className="fleet-count clickable"
+                    title={`${waiting} waiting on you — open inbox (⌘E)`}
+                    onClick={props.onOpenInbox}
+                  >
+                    <span className="dot dot-needs-you" />{waiting}
+                  </button>
+                )}
+                {idle > 0 && (
+                  <span className="fleet-count" title={`${idle} idle`}>
+                    <span className="dot dot-idle" />{idle}
+                  </span>
+                )}
+                {props.sessions.length === 0 && <span className="fleet-empty">no sessions</span>}
+              </div>
+              {usage && (
+                <span className="fleet-usage" title="Total usage across all sessions">
+                  Σ {usage}
+                </span>
+              )}
+            </>
+          )
+        })()}
+      </div>
     </aside>
   )
 }

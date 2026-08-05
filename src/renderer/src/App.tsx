@@ -208,6 +208,7 @@ export default function App(): React.JSX.Element {
           onReorder={(ids) => window.api.reorder(ids)}
           onNew={() => { setDialogPrefill(null); setDialogOpen(true) }}
           onNewInProject={(dir, worktree) => { setDialogPrefill({ dir, worktree }); setDialogOpen(true) }}
+          onOpenInbox={() => setRightPane('inbox')}
         />
       )}
       {!collapsed && <div className="v-divider" onMouseDown={(e) => startVDrag('left', e)} />}

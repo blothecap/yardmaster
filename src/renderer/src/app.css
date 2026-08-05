@@ -66,7 +66,32 @@ body {
   cursor: pointer;
 }
 .new-btn:hover, .remove-btn:hover { color: var(--fg); }
-.sidebar ul { list-style: none; }
+.sidebar ul { list-style: none; flex: 1; overflow-y: auto; }
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid #050505;
+  background: var(--bg-sidebar);
+}
+.fleet-counts { display: flex; align-items: center; gap: 10px; }
+.fleet-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--fg-dim);
+  background: none;
+  border: none;
+  padding: 0;
+}
+.fleet-count.clickable { cursor: pointer; }
+.fleet-count.clickable:hover { color: var(--fg); }
+.fleet-empty { font-size: 11px; color: var(--fg-dim); }
+.fleet-usage { font-size: 10.5px; color: var(--fg-dim); font-family: var(--font-mono); }
 .session-row {
   display: flex;
   align-items: center;
