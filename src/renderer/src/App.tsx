@@ -20,22 +20,19 @@ export default function App(): React.JSX.Element {
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
   const [shellHeight, setShellHeight] = useState(35) // % of the terminal area
 
-  // Sidebar shows worktree sessions grouped under their repo; shortcuts follow the same visible order
+  // Sidebar groups sessions sharing a directory (worktrees by repo root, plain by cwd);
+  // shortcuts follow the same visible order
   const displaySessions = useMemo(() => {
+    const keyOf = (s: SessionView): string => s.worktree?.repoRoot ?? s.cwd
     const seen = new Set<string>()
     const out: SessionView[] = []
     for (const s of sessions) {
       if (seen.has(s.id)) continue
-      if (s.worktree) {
-        for (const t of sessions) {
-          if (t.worktree?.repoRoot === s.worktree.repoRoot && !seen.has(t.id)) {
-            out.push(t)
-            seen.add(t.id)
-          }
+      for (const t of sessions) {
+        if (keyOf(t) === keyOf(s) && !seen.has(t.id)) {
+          out.push(t)
+          seen.add(t.id)
         }
-      } else {
-        out.push(s)
-        seen.add(s.id)
       }
     }
     return out

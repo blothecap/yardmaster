@@ -20,6 +20,15 @@ function shortCwd(cwd: string, home: string): string {
   return home && cwd.startsWith(home) ? '~' + cwd.slice(home.length) : cwd
 }
 
+function keyOf(s: SessionView): string {
+  return s.worktree?.repoRoot ?? s.cwd
+}
+
+/** Grouped = shares a directory with another session, or is a worktree copy. */
+function isGrouped(s: SessionView, all: SessionView[]): boolean {
+  return s.worktree !== null || all.some((t) => t.id !== s.id && keyOf(t) === keyOf(s))
+}
+
 function relativeTime(ts: number | null): string {
   if (!ts) return ''
   const s = Math.floor((Date.now() - ts) / 1000)
@@ -51,13 +60,13 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
       <ul>
         {props.sessions.map((s, i) => {
           const prev = props.sessions[i - 1]
-          const startsGroup =
-            s.worktree && prev?.worktree?.repoRoot !== s.worktree.repoRoot
+          const grouped = isGrouped(s, props.sessions)
+          const startsGroup = grouped && (!prev || keyOf(prev) !== keyOf(s))
           return (
           <Fragment key={s.id}>
-          {startsGroup && s.worktree && (
-            <li className="repo-group-header" title={s.worktree.repoRoot}>
-              {shortCwd(s.worktree.repoRoot, props.home)}
+          {startsGroup && (
+            <li className="repo-group-header" title={keyOf(s)}>
+              {shortCwd(keyOf(s), props.home)}
             </li>
           )}
           <li
@@ -69,7 +78,8 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
               'session-row',
               s.id === props.activeId ? 'active' : '',
               s.status === 'needs-you' ? 'needs-you' : '',
-              s.worktree ? 'worktree' : ''
+              s.worktree ? 'worktree' : '',
+              grouped ? 'grouped' : ''
             ].join(' ')}
             onClick={() => props.onSelect(s.id)}
             onDoubleClick={() => { setEditText(s.name); props.onRenameStart(s.id) }}
@@ -91,9 +101,11 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
             ) : (
               <div className="session-labels">
                 <div className="session-name">{s.name}</div>
-                <div className="session-cwd" title={s.cwd}>
-                  {s.worktree ? `⎇ ${s.worktree.branch}` : shortCwd(s.cwd, props.home)}
-                </div>
+                {(s.worktree || !grouped) && (
+                  <div className="session-cwd" title={s.cwd}>
+                    {s.worktree ? `⎇ ${s.worktree.branch}` : shortCwd(s.cwd, props.home)}
+                  </div>
+                )}
               </div>
             )}
             <span className="session-time">{relativeTime(s.lastActivityAt)}</span>

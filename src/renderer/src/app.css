@@ -84,7 +84,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.session-row.worktree { padding-left: 22px; }
+.session-row.grouped { padding-left: 22px; }
 .session-row.worktree .session-cwd { color: var(--accent); opacity: 0.75; }
 .worktree-check {
   flex-direction: row !important;
