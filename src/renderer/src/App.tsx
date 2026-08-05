@@ -19,10 +19,8 @@ export default function App(): React.JSX.Element {
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogPrefill, setDialogPrefill] = useState<{ dir: string; worktree: boolean } | null>(null)
-  const [shellOpen, setShellOpen] = useState<Set<string>>(new Set())
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
-  const [shellHeight, setShellHeight] = useState(35) // % of the terminal area
-  const [rightPane, setRightPane] = useState<'inbox' | 'changes' | null>(null)
+  const [rightPane, setRightPane] = useState<'inbox' | 'changes' | 'shell' | null>(null)
 
   // Sidebar groups sessions sharing a directory (worktrees by repo root, plain by cwd);
   // shortcuts follow the same visible order
@@ -47,9 +45,8 @@ export default function App(): React.JSX.Element {
   sessionsRef.current = displaySessions
   const activeIdRef = useRef(activeId)
   activeIdRef.current = activeId
-  const shellOpenRef = useRef(shellOpen)
-  shellOpenRef.current = shellOpen
-  const mainRef = useRef<HTMLElement>(null)
+  const rightPaneRef = useRef(rightPane)
+  rightPaneRef.current = rightPane
 
   const switchTo = useCallback((id: string) => {
     setActiveId(id)
@@ -64,32 +61,20 @@ export default function App(): React.JSX.Element {
 
   const closeRightPane = useCallback(() => setRightPane(null), [])
 
-  const toggleShell = useCallback((id: string) => {
-    if (shellOpenRef.current.has(id)) {
-      setShellOpen((prev) => { const n = new Set(prev); n.delete(id); return n })
-    } else {
-      window.api.shellEnsure(id)
-      setShellCreated((prev) => new Set(prev).add(id))
-      setShellOpen((prev) => new Set(prev).add(id))
-    }
+  const openShellFor = useCallback((id: string) => {
+    window.api.shellEnsure(id)
+    setShellCreated((prev) => new Set(prev).add(id))
   }, [])
 
-  const startDividerDrag = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    const main = mainRef.current
-    if (!main) return
-    const onMove = (ev: MouseEvent): void => {
-      const rect = main.getBoundingClientRect()
-      const pct = ((rect.bottom - ev.clientY) / rect.height) * 100
-      setShellHeight(Math.min(80, Math.max(15, pct)))
+  const toggleShellPane = useCallback(() => {
+    if (rightPaneRef.current === 'shell') {
+      setRightPane(null)
+    } else {
+      const current = activeIdRef.current
+      if (current) openShellFor(current)
+      setRightPane('shell')
     }
-    const onUp = (): void => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [])
+  }, [openShellFor])
 
   // Changes pane content is per-session — close it on session switch (inbox is global, stays open)
   useEffect(() => { setRightPane((p) => (p === 'changes' ? null : p)) }, [activeId])
@@ -121,7 +106,6 @@ export default function App(): React.JSX.Element {
     const offShellData = window.api.onShellData((id, data) => getTerminal(`shell:${id}`)?.write(data))
     const offShellExit = window.api.onShellExit((id) => {
       // shell ended (user typed exit, or its session closed) — the pane goes away
-      setShellOpen((prev) => { const n = new Set(prev); n.delete(id); return n })
       setShellCreated((prev) => { const n = new Set(prev); n.delete(id); return n })
     })
     return () => { offChanged(); offFocus(); offShortcut(); offData(); offStartRename(); offShellData(); offShellExit() }
@@ -158,10 +142,10 @@ export default function App(): React.JSX.Element {
         setCollapsed((c) => !c)
         break
       case 'toggle-shell':
-        if (current) toggleShell(current)
+        toggleShellPane()
         break
     }
-  }, [switchTo, toggleShell])
+  }, [switchTo, toggleShellPane])
 
   const activeSession = sessions.find((s) => s.id === activeId) ?? null
   const needsYouCount = sessions.filter((s) => s.status === 'needs-you').length
@@ -198,7 +182,7 @@ export default function App(): React.JSX.Element {
           onNewInProject={(dir, worktree) => { setDialogPrefill({ dir, worktree }); setDialogOpen(true) }}
         />
       )}
-      <main className="terminal-area" ref={mainRef}>
+      <main className="terminal-area">
         {corruptBackup && (
           <div className="banner">
             sessions.json was corrupt — a backup was saved to {corruptBackup}
@@ -217,26 +201,6 @@ export default function App(): React.JSX.Element {
           {sessions.length === 0 && (
             <div className="empty-state">No sessions yet — press ⌘N to create one.</div>
           )}
-        </div>
-        <div
-          className="shell-divider"
-          style={{ display: activeId && shellOpen.has(activeId) ? 'block' : 'none' }}
-          onMouseDown={startDividerDrag}
-        />
-        <div
-          className="shell-split"
-          style={{
-            display: activeId && shellOpen.has(activeId) ? 'block' : 'none',
-            height: `${shellHeight}%`
-          }}
-        >
-          {sessions.filter((s) => shellCreated.has(s.id)).map((s) => (
-            <ShellPane
-              key={s.id}
-              sessionId={s.id}
-              visible={s.id === activeId && shellOpen.has(s.id)}
-            />
-          ))}
         </div>
       </main>
       {rightPane && (
@@ -259,6 +223,32 @@ export default function App(): React.JSX.Element {
               against its base branch.
             </div>
           )}
+          {rightPane === 'shell' && (
+            <div className="shell-view">
+              <div className="shell-view-header">
+                <span className="shell-view-title">
+                  Shell{activeSession ? ` — ${activeSession.name}` : ''}
+                </span>
+                <button className="shell-view-close" onClick={closeRightPane}>×</button>
+              </div>
+              <div className="shell-view-body">
+                {sessions.filter((s) => shellCreated.has(s.id)).map((s) => (
+                  <ShellPane key={s.id} sessionId={s.id} visible={s.id === activeId} />
+                ))}
+                {activeSession && !shellCreated.has(activeSession.id) && (
+                  <div className="shell-view-empty">
+                    <button
+                      className="shell-open-btn"
+                      onClick={() => openShellFor(activeSession.id)}
+                    >
+                      Open shell in {activeSession.name}
+                    </button>
+                  </div>
+                )}
+                {!activeSession && <div className="shell-view-empty">No active session.</div>}
+              </div>
+            </div>
+          )}
         </aside>
       )}
       <nav className="activity-strip">
@@ -272,6 +262,18 @@ export default function App(): React.JSX.Element {
             <path d="M13.7 21a2 2 0 0 1-3.4 0" />
           </svg>
           {needsYouCount > 0 && <span className="strip-badge">{needsYouCount}</span>}
+        </button>
+        <button
+          className={`strip-btn${rightPane === 'shell' ? ' active' : ''}`}
+          title="Shell in this session's directory (⌘T)"
+          disabled={!activeSession}
+          onClick={toggleShellPane}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <path d="m7 9 3 3-3 3" />
+            <path d="M13 15h4" />
+          </svg>
         </button>
         <button
           className={`strip-btn${rightPane === 'changes' ? ' active' : ''}`}
