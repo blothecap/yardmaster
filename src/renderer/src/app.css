@@ -180,34 +180,37 @@ body {
   padding: 1px 5px;
   vertical-align: 1px;
 }
-.worktree-check {
+.dialog label.worktree-check {
   display: flex;
-  flex-direction: row !important;
+  flex-direction: row;
   align-items: center;
-  gap: 10px !important;
+  gap: 10px;
   padding: 9px 12px;
   border: 1px solid var(--bg-active);
   border-radius: 5px;
   background: var(--bg);
   cursor: pointer;
 }
-.worktree-check input {
-  width: auto;
+.dialog label.worktree-check input {
+  width: 14px;
+  height: 14px;
   margin: 0;
+  padding: 0;
   flex-shrink: 0;
   accent-color: var(--accent);
 }
-.worktree-check span {
+.dialog label.worktree-check span {
   flex: 1;
+  min-width: 0;
   text-align: left;
   font-size: 12px;
   color: var(--fg);
   line-height: 1.4;
 }
-.worktree-check:has(input:checked) { border-color: var(--accent); }
-.worktree-check.unavailable { opacity: 0.6; cursor: default; }
-.worktree-check.unavailable span { color: var(--fg-dim); }
-.worktree-check.unavailable em { font-style: normal; }
+.dialog label.worktree-check:has(input:checked) { border-color: var(--accent); }
+.dialog label.worktree-check.unavailable { opacity: 0.6; cursor: default; }
+.dialog label.worktree-check.unavailable span { color: var(--fg-dim); }
+.dialog label.worktree-check.unavailable em { font-style: normal; }
 .dot { width: 7px; height: 7px; min-width: 7px; border-radius: 50%; }
 .dot-working { background: var(--status-working); animation: pulse 1.2s ease-in-out infinite; }
 .dot-needs-you {
