@@ -55,7 +55,7 @@ logged in, Node ≥ 23.11 (see `.nvmrc`), Xcode CLT (for the node-pty native bui
 
 ```sh
 nvm use                      # Node 23.11+ — older Node breaks Electron's installer
-npx -y npm@11 install        # npm 10.9 has an arborist bug on this tree; use npm 1
+npx -y npm@11 install        # npm 10.9 has an arborist bug on this tree; use npm 11
 npm run dev                  # development
 npm run dist                 # build release/mac-arm64/Switchyard.app (unsigned, local use)
 ```
