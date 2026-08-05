@@ -555,12 +555,16 @@ body {
 }
 .inbox-list { list-style: none; overflow-y: auto; }
 .inbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 12px;
   cursor: pointer;
   border-bottom: 1px solid var(--bg-active);
 }
 .inbox-row:last-child { border-bottom: none; }
 .inbox-row:hover { background: var(--bg-hover); }
+.inbox-row-main { flex: 1; min-width: 0; }
 .inbox-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inbox-message {
   color: var(--status-needs-you);
@@ -568,5 +572,28 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.inbox-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.inbox-action-btn {
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  font-size: 12px;
+  width: 18px;
+  height: 16px;
+  line-height: 14px;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+.inbox-action-btn.approve:hover { color: var(--status-idle); background: var(--bg-hover); }
+.inbox-action-btn.deny:hover { color: var(--status-needs-you); background: var(--bg-hover); }
+.inbox-footer {
+  display: flex;
+  gap: 10px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--bg-active);
+  color: var(--fg-dim);
+  font-size: 10px;
 }
 .review-pane-footer button:disabled { opacity: 0.5; cursor: default; }
