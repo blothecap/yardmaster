@@ -14,6 +14,7 @@ const api = {
     ipcRenderer.invoke('sessions:create', { name, cwd, worktree }),
   checkGitRepo: (dir: string): Promise<string | null> => ipcRenderer.invoke('app:checkGitRepo', dir),
   activate: (id: string): Promise<void> => ipcRenderer.invoke('sessions:activate', id),
+  buffer: (id: string): Promise<string> => ipcRenderer.invoke('sessions:buffer', id),
   setActive: (id: string | null): Promise<void> => ipcRenderer.invoke('sessions:setActive', id),
   rename: (id: string, name: string): Promise<void> => ipcRenderer.invoke('sessions:rename', { id, name }),
   close: (id: string): Promise<void> => ipcRenderer.invoke('sessions:close', id),

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { Terminal } from '@xterm/xterm'
 import type { FitAddon } from '@xterm/addon-fit'
 import { createTerm } from '../xterm-factory'
-import { registerTerminal, unregisterTerminal } from '../terminal-registry'
+import { getTerminal, registerTerminal, unregisterTerminal } from '../terminal-registry'
 
 interface TerminalPaneProps {
   sessionId: string
@@ -22,17 +22,30 @@ export default function TerminalPane({ sessionId, visible }: TerminalPaneProps):
     term.open(containerRef.current!)
     fit.fit()
     window.api.resize(sessionId, term.cols, term.rows)
-    registerTerminal(sessionId, term)
     termRef.current = term
     fitRef.current = fit
+
+    // Replay buffered output (renderer reloads, panes mounting after spawn) before
+    // going live — registering only after replay keeps ordering sane.
+    let disposed = false
+    window.api.buffer(sessionId).then((buf) => {
+      if (disposed) return
+      if (buf) term.write(buf)
+      registerTerminal(sessionId, term)
+    })
 
     const observer = new ResizeObserver(() => {
       if (containerRef.current!.offsetWidth > 0) fitRef.current?.fit()
     })
     observer.observe(containerRef.current!)
     return () => {
+      disposed = true
       observer.disconnect()
-      unregisterTerminal(sessionId)
+      if (getTerminal(sessionId) === term) {
+        unregisterTerminal(sessionId) // disposes the term via the registry
+      } else {
+        term.dispose() // replay never completed; term was never registered
+      }
     }
   }, [sessionId])
 

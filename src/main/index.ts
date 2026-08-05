@@ -187,6 +187,7 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle('app:checkGitRepo', (_e, dir: string) => detectRepoRoot(dir))
     ipcMain.handle('sessions:activate', (_e, id) => manager!.activate(id))
+    ipcMain.handle('sessions:buffer', (_e, id: string) => manager!.getBuffer(id))
     ipcMain.handle('sessions:setActive', (_e, id) => manager!.setActive(id))
     ipcMain.handle('sessions:rename', (_e, { id, name }) => manager!.rename(id, name))
     ipcMain.handle('sessions:close', (_e, id) => {

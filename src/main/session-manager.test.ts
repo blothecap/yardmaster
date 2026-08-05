@@ -299,6 +299,54 @@ describe('spawn size', () => {
   })
 })
 
+describe('output replay buffer', () => {
+  it('accumulates pty output and returns it from getBuffer', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    spawns[0].pty.dataCb!('hello ')
+    spawns[0].pty.dataCb!('world')
+    expect(m.getBuffer(v.id)).toBe('hello world')
+  })
+
+  it('caps the buffer, keeping the most recent output', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    spawns[0].pty.dataCb!('x'.repeat(200_000))
+    spawns[0].pty.dataCb!('TAIL')
+    const buf = m.getBuffer(v.id)
+    expect(buf.length).toBe(200_000)
+    expect(buf.endsWith('TAIL')).toBe(true)
+  })
+
+  it('clears the buffer on respawn (fresh process paints a fresh screen)', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    spawns[0].pty.dataCb!('old screen')
+    m.close(v.id)
+    expect(m.getBuffer(v.id)).toBe('old screen') // survives exit for exited-session display
+    m.activate(v.id)
+    expect(m.getBuffer(v.id)).toBe('')
+    spawns[1].pty.dataCb!('new screen')
+    expect(m.getBuffer(v.id)).toBe('new screen')
+  })
+
+  it('includes injected messages like the resume-failed note', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp/proj')
+    m.handleHookEvent(v.id, 'SessionStart', { session_id: 'cs-old' })
+    m.close(v.id)
+    m.activate(v.id)
+    clock.t += 2000
+    spawns[1].pty.exitCb!({ exitCode: 1 }) // resume fallback -> respawn + injected note
+    expect(m.getBuffer(v.id)).toContain('resume failed')
+  })
+
+  it('returns empty string for unknown sessions', () => {
+    const m = makeManager()
+    expect(m.getBuffer('ghost')).toBe('')
+  })
+})
+
 describe('worktree metadata', () => {
   it('create stores and persists worktree info', () => {
     const m = makeManager()

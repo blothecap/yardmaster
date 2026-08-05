@@ -30,6 +30,7 @@ export interface SessionManagerDeps {
 }
 
 const RESUME_FAIL_WINDOW_MS = 5000
+const BUFFER_CAP = 200_000
 
 interface InternalSession {
   meta: SessionMeta
@@ -43,6 +44,7 @@ interface InternalSession {
   lastSize: { cols: number; rows: number } | null
   lastPrompt: string | null
   pendingMessage: string | null
+  buffer: string
 }
 
 const PROMPT_MAX_LEN = 120
@@ -76,7 +78,8 @@ export class SessionManager extends EventEmitter {
         closing: false,
         lastSize: null,
         lastPrompt: null,
-        pendingMessage: null
+        pendingMessage: null,
+        buffer: ''
       })
     }
   }
@@ -108,7 +111,8 @@ export class SessionManager extends EventEmitter {
       closing: false,
       lastSize: null,
       lastPrompt: null,
-      pendingMessage: null
+      pendingMessage: null,
+      buffer: ''
     }
     this.sessions.set(meta.id, session)
     try {
@@ -228,6 +232,16 @@ export class SessionManager extends EventEmitter {
     }
   }
 
+  getBuffer(id: string): string {
+    return this.sessions.get(id)?.buffer ?? ''
+  }
+
+  /** Buffer output for replay (renderer reloads, late pane mounts), then emit live. */
+  private pushData(s: InternalSession, chunk: string): void {
+    s.buffer = (s.buffer + chunk).slice(-BUFFER_CAP)
+    this.emit('data', s.meta.id, chunk)
+  }
+
   private spawn(s: InternalSession, resumeId: string | null): void {
     const settingsPath = this.deps.writeSettings(s.meta.id)
     const { cols, rows } = s.lastSize ?? { cols: 80, rows: 24 }
@@ -236,10 +250,11 @@ export class SessionManager extends EventEmitter {
     s.spawnedAt = this.deps.now()
     s.spawnedWithResume = resumeId !== null
     s.closing = false
+    s.buffer = '' // fresh process repaints from scratch; stale bytes would corrupt the replay
     pty.onData((chunk) => {
       if (s.pty !== pty) return
       s.lastActivityAt = this.deps.now()
-      this.emit('data', s.meta.id, chunk)
+      this.pushData(s, chunk)
     })
     pty.onExit(({ exitCode }) => {
       if (s.pty !== pty) return
@@ -256,9 +271,9 @@ export class SessionManager extends EventEmitter {
       exitCode !== 0 &&
       this.deps.now() - s.spawnedAt < RESUME_FAIL_WINDOW_MS
     if (fastResumeFailure) {
-      this.emit('data', s.meta.id, '\r\n[claude-terminal] resume failed — starting a fresh session\r\n')
       s.meta.claudeSessionId = null
-      this.spawn(s, null)
+      this.spawn(s, null) // clears the replay buffer — inject the note after, so it survives
+      this.pushData(s, '\r\n[claude-terminal] resume failed — starting a fresh session\r\n')
       this.transition(s, 'idle')
       this.persist()
       return
