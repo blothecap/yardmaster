@@ -23,6 +23,10 @@ describe('buildHookSettings', () => {
       expect(cmd.trim().endsWith('|| true')).toBe(true)
     }
   })
+
+  it('rejects appSessionId values that could break shell quoting', () => {
+    expect(() => buildHookSettings(43210, "x'; rm -rf ~ #")).toThrow(/invalid appSessionId/)
+  })
 })
 
 describe('writeSessionSettings', () => {

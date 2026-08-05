@@ -3,6 +3,9 @@ import path from 'node:path'
 import { HOOK_EVENTS } from '../shared/types'
 
 export function buildHookSettings(port: number, appSessionId: string): object {
+  if (!/^[0-9a-zA-Z-]+$/.test(appSessionId)) {
+    throw new Error(`invalid appSessionId: ${appSessionId}`)
+  }
   const hooks: Record<string, unknown> = {}
   for (const event of HOOK_EVENTS) {
     const url = `http://127.0.0.1:${port}/hook/${appSessionId}/${event}`
