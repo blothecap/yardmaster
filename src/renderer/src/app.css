@@ -120,3 +120,50 @@ body {
   font-size: 13px;
   cursor: pointer;
 }
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.dialog {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--bg-active);
+  border-radius: 8px;
+  padding: 20px;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dialog h2 { font-size: 15px; }
+.dialog label { display: flex; flex-direction: column; gap: 6px; color: var(--fg-dim); font-size: 12px; }
+.dialog input {
+  background: var(--bg);
+  border: 1px solid var(--bg-active);
+  color: var(--fg);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 100%;
+}
+.dialog input:focus { outline: none; border-color: var(--accent); }
+.dir-row { display: flex; gap: 6px; }
+.dir-row input { flex: 1; }
+.dialog button {
+  background: var(--bg-hover);
+  color: var(--fg);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.dialog button.primary { background: var(--accent); color: #16161e; }
+.dialog button:disabled { opacity: 0.4; cursor: default; }
+.recent-dirs { display: flex; flex-wrap: wrap; gap: 6px; }
+.recent-dir { font-family: var(--font-mono); font-size: 11px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }

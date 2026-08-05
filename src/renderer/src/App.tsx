@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SessionView, ShortcutAction } from '../../shared/types'
 import Sidebar from './components/Sidebar'
 import TerminalPane from './components/TerminalPane'
+import NewSessionDialog from './components/NewSessionDialog'
 import { getTerminal } from './terminal-registry'
 
 export default function App(): React.JSX.Element {
@@ -137,7 +138,18 @@ export default function App(): React.JSX.Element {
           <div className="empty-state">No sessions yet — press ⌘N to create one.</div>
         )}
       </main>
-      {dialogOpen && <div className="dialog-placeholder" onClick={() => setDialogOpen(false)} />}
+      {dialogOpen && (
+        <NewSessionDialog
+          recentDirs={[...new Set(sessions.map((s) => s.cwd))]}
+          home={home}
+          onCreate={async (name, cwd) => {
+            const view = await window.api.create(name, cwd)
+            setDialogOpen(false)
+            switchTo(view.id)
+          }}
+          onCancel={() => setDialogOpen(false)}
+        />
+      )}
     </div>
   )
 }
