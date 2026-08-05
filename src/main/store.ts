@@ -13,13 +13,19 @@ export class Store {
       return { sessions: parsed as SessionMeta[], corruptBackupPath: null }
     } catch {
       const backup = `${this.filePath}.corrupt-${Date.now()}`
-      fs.renameSync(this.filePath, backup)
-      return { sessions: [], corruptBackupPath: backup }
+      try {
+        fs.renameSync(this.filePath, backup)
+        return { sessions: [], corruptBackupPath: backup }
+      } catch {
+        return { sessions: [], corruptBackupPath: null }
+      }
     }
   }
 
   save(sessions: SessionMeta[]): void {
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true })
-    fs.writeFileSync(this.filePath, JSON.stringify(sessions, null, 2))
+    const tmpPath = `${this.filePath}.tmp`
+    fs.writeFileSync(tmpPath, JSON.stringify(sessions, null, 2))
+    fs.renameSync(tmpPath, this.filePath)
   }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -48,5 +48,31 @@ describe('Store', () => {
     const result = new Store(file).load()
     expect(result.sessions).toEqual([])
     expect(result.corruptBackupPath).not.toBeNull()
+  })
+
+  it('atomic write: overwrite leaves valid JSON and no leftover tmp file', () => {
+    const file = path.join(dir, 'sessions.json')
+    const store = new Store(file)
+    store.save(sample)
+    store.save([sample[1]]) // overwrite
+    expect(fs.existsSync(`${file}.tmp`)).toBe(false)
+    expect(() => JSON.parse(fs.readFileSync(file, 'utf8'))).not.toThrow()
+    expect(store.load().sessions).toEqual([sample[1]])
+  })
+
+  it('recovery failure path does not throw when renameSync fails', () => {
+    const file = path.join(dir, 'sessions.json')
+    fs.writeFileSync(file, '{not json!!')
+    const spy = vi.spyOn(fs, 'renameSync').mockImplementation(() => {
+      throw new Error('EACCES: permission denied')
+    })
+    try {
+      const store = new Store(file)
+      let result: ReturnType<typeof store.load> | undefined
+      expect(() => { result = store.load() }).not.toThrow()
+      expect(result).toEqual({ sessions: [], corruptBackupPath: null })
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

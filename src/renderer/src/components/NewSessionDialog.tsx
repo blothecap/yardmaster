@@ -12,6 +12,13 @@ function branchPreview(name: string): string {
   return slug || 'session'
 }
 
+function shortPath(p: string, home: string): string {
+  if (!home) return p
+  if (p === home) return '~'
+  if (p.startsWith(home + '/')) return '~' + p.slice(home.length)
+  return p
+}
+
 export default function NewSessionDialog(props: NewSessionDialogProps): React.JSX.Element {
   const [name, setName] = useState('')
   const [cwd, setCwd] = useState(props.recentDirs[0] ?? props.home)
@@ -30,7 +37,8 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
   }, [cwd])
 
   const submit = (): void => {
-    if (name.trim() && cwd) props.onCreate(name.trim(), cwd, worktree && repoRoot !== null)
+    const trimmedCwd = cwd.trim()
+    if (name.trim() && trimmedCwd) props.onCreate(name.trim(), trimmedCwd, worktree && repoRoot !== null)
   }
 
   return (
@@ -53,7 +61,14 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
         <label>
           Directory
           <div className="dir-row">
-            <input value={cwd} onChange={(e) => setCwd(e.target.value)} />
+            <input
+              value={cwd}
+              onChange={(e) => setCwd(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submit()
+                if (e.key === 'Escape') props.onCancel()
+              }}
+            />
             <button
               onClick={async () => {
                 const picked = await window.api.pickDirectory()
@@ -68,7 +83,7 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
           <div className="recent-dirs">
             {props.recentDirs.slice(0, 5).map((d) => (
               <button key={d} className="recent-dir" onClick={() => setCwd(d)}>
-                {d.startsWith(props.home) ? '~' + d.slice(props.home.length) : d}
+                {shortPath(d, props.home)}
               </button>
             ))}
           </div>
@@ -88,7 +103,7 @@ export default function NewSessionDialog(props: NewSessionDialogProps): React.JS
         )}
         <div className="dialog-actions">
           <button onClick={props.onCancel}>Cancel</button>
-          <button className="primary" disabled={!name.trim() || !cwd} onClick={submit}>
+          <button className="primary" disabled={!name.trim() || !cwd.trim()} onClick={submit}>
             Create
           </button>
         </div>

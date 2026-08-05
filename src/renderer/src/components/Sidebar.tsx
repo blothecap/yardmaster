@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { SessionView } from '../../../shared/types'
 
 interface SidebarProps {
@@ -17,7 +17,10 @@ interface SidebarProps {
 }
 
 function shortCwd(cwd: string, home: string): string {
-  return home && cwd.startsWith(home) ? '~' + cwd.slice(home.length) : cwd
+  if (!home) return cwd
+  if (cwd === home) return '~'
+  if (cwd.startsWith(home + '/')) return '~' + cwd.slice(home.length)
+  return cwd
 }
 
 function keyOf(s: SessionView): string {
@@ -36,13 +39,29 @@ function relativeTime(ts: number | null): string {
 export default function Sidebar(props: SidebarProps): React.JSX.Element {
   const dragId = useRef<string | null>(null)
   const [editText, setEditText] = useState('')
+  const [, setTick] = useState(0)
+
+  // Relative timestamps ("3m", "1h") go stale if we only recompute on props changes;
+  // tick every 30s so they keep advancing while a session sits idle.
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleDrop = (targetId: string): void => {
     const from = dragId.current
     dragId.current = null
     if (!from || from === targetId) return
     const ids = props.sessions.map((s) => s.id)
-    ids.splice(ids.indexOf(targetId), 0, ...ids.splice(ids.indexOf(from), 1))
+    const fromIdx = ids.indexOf(from)
+    const targetIdx = ids.indexOf(targetId)
+    if (fromIdx === -1 || targetIdx === -1) return
+    ids.splice(fromIdx, 1)
+    // Dropping always inserts BEFORE the target row. Removing `from` first shifts
+    // everything after it left by one, so when it was before the target the target's
+    // own index moves down by one too — adjust for that.
+    const insertAt = fromIdx < targetIdx ? targetIdx - 1 : targetIdx
+    ids.splice(insertAt, 0, from)
     props.onReorder(ids)
   }
 

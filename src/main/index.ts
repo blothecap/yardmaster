@@ -121,7 +121,8 @@ app.whenReady().then(async () => {
     manager = new SessionManager({
       store,
       spawner,
-      writeSettings: (appSessionId) => writeSessionSettings(settingsDir, port, appSessionId)
+      writeSettings: (appSessionId) => writeSessionSettings(settingsDir, port, appSessionId),
+      deleteSettings: (id) => fs.rmSync(path.join(settingsDir, `session-${id}.settings.json`), { force: true })
     })
 
     shellManager = new ShellManager({

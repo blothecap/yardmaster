@@ -12,6 +12,7 @@ export interface SessionMeta {
   claudeSessionId: string | null
   order: number
   worktree: { repoRoot: string; branch: string; baseBranch: string } | null
+  lastActivityAt?: number | null
 }
 
 /** Pushed to the renderer */

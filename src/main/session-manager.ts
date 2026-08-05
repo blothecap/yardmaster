@@ -26,6 +26,7 @@ export interface SessionManagerDeps {
   spawner: PtySpawner
   writeSettings: (appSessionId: string) => string
   now?: () => number
+  deleteSettings?: (id: string) => void
 }
 
 const RESUME_FAIL_WINDOW_MS = 5000
@@ -58,7 +59,7 @@ export class SessionManager extends EventEmitter {
 
   constructor(deps: SessionManagerDeps) {
     super()
-    this.deps = { now: Date.now, ...deps }
+    this.deps = { ...deps, now: deps.now ?? Date.now, deleteSettings: deps.deleteSettings ?? (() => {}) }
     for (const meta of this.deps.store.load().sessions) {
       this.sessions.set(meta.id, {
         meta: {
@@ -68,7 +69,7 @@ export class SessionManager extends EventEmitter {
         },
         status: 'exited',
         pty: null,
-        lastActivityAt: null,
+        lastActivityAt: meta.lastActivityAt ?? null,
         statusChangedAt: this.deps.now(),
         spawnedAt: 0,
         spawnedWithResume: false,
@@ -160,6 +161,7 @@ export class SessionManager extends EventEmitter {
     s.closing = true
     s.pty?.kill()
     this.sessions.delete(id)
+    this.deps.deleteSettings(id)
     this.persist()
   }
 
@@ -270,7 +272,9 @@ export class SessionManager extends EventEmitter {
   }
 
   private persist(): void {
-    this.deps.store.save([...this.sessions.values()].map((s) => s.meta))
+    this.deps.store.save(
+      [...this.sessions.values()].map((s) => ({ ...s.meta, lastActivityAt: s.lastActivityAt }))
+    )
     this.emitChanged()
   }
 

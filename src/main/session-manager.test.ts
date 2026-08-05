@@ -320,6 +320,74 @@ describe('restore from store', () => {
   })
 })
 
+describe('lastActivityAt persistence', () => {
+  it('persists lastActivityAt (tracked via hook events) and restores it on reload', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    clock.t = 5000
+    // SessionStart with a new claudeSessionId triggers a persist(); lastActivityAt is
+    // updated on every hook event, so this persist should carry the current value.
+    m.handleHookEvent(v.id, 'SessionStart', { session_id: 'cs-round-trip' })
+    expect(store.load().sessions[0].lastActivityAt).toBe(5000)
+
+    const m2 = makeManager()
+    expect(m2.list()[0].lastActivityAt).toBe(5000)
+  })
+
+  it('persists lastActivityAt updates from pty data on the next persist()', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    clock.t = 9000
+    spawns[0].pty.dataCb!('some output')
+    m.rename(v.id, 'a') // forces persist()
+    expect(store.load().sessions[0].lastActivityAt).toBe(9000)
+  })
+})
+
+describe('settings cleanup on remove', () => {
+  it('calls the injected deleteSettings dep with the session id', () => {
+    const deleted: string[] = []
+    const m = new SessionManager({
+      store,
+      spawner: (opts) => {
+        const pty = new FakePty()
+        spawns.push({ opts, pty })
+        return pty
+      },
+      writeSettings: (id) => `/fake/settings-${id}.json`,
+      now: () => clock.t,
+      deleteSettings: (id) => deleted.push(id)
+    })
+    const v = m.create('a', '/tmp')
+    m.remove(v.id)
+    expect(deleted).toEqual([v.id])
+  })
+
+  it('remove works fine without a deleteSettings dep (no-op default)', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    expect(() => m.remove(v.id)).not.toThrow()
+    expect(m.list()).toHaveLength(0)
+  })
+})
+
+describe('now dep default', () => {
+  it('explicit now: undefined falls back to Date.now without breaking construction', () => {
+    const m = new SessionManager({
+      store,
+      spawner: (opts) => {
+        const pty = new FakePty()
+        spawns.push({ opts, pty })
+        return pty
+      },
+      writeSettings: (id) => `/fake/settings-${id}.json`,
+      now: undefined
+    })
+    expect(() => m.create('a', '/tmp')).not.toThrow()
+    expect(m.list()[0].status).toBe('idle')
+  })
+})
+
 describe('reorder and rename', () => {
   it('reorder rewrites order fields and list() sorts by them', () => {
     const m = makeManager()
