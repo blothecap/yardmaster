@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SessionView, ShortcutAction } from '../../shared/types'
 import Sidebar from './components/Sidebar'
+import TerminalPane from './components/TerminalPane'
+import { getTerminal } from './terminal-registry'
 
 export default function App(): React.JSX.Element {
   const [sessions, setSessions] = useState<SessionView[]>([])
@@ -44,6 +46,7 @@ export default function App(): React.JSX.Element {
     })
     window.api.onFocus((id) => switchTo(id))
     window.api.onShortcut((action) => handleShortcut(action))
+    window.api.onData((id, data) => getTerminal(id)?.write(data))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -120,7 +123,15 @@ export default function App(): React.JSX.Element {
             sessions.json was corrupt — a backup was saved to {corruptBackup}
           </div>
         )}
-        {/* TerminalPane mounts here in Task 8; NewSessionDialog in Task 9 */}
+        {sessions.map((s) => (
+          <TerminalPane key={s.id} sessionId={s.id} visible={s.id === activeId} />
+        ))}
+        {activeId && sessions.find((s) => s.id === activeId)?.status === 'exited' && (
+          <div className="exited-overlay">
+            <p>Session exited.</p>
+            <button onClick={() => window.api.activate(activeId)}>Relaunch</button>
+          </div>
+        )}
         {sessions.length === 0 && (
           <div className="empty-state">No sessions yet — press ⌘N to create one.</div>
         )}

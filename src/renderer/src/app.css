@@ -100,3 +100,23 @@ body {
 }
 .fullscreen-message h1 { color: var(--fg); font-size: 20px; }
 .fullscreen-message code { font-family: var(--font-mono); color: var(--accent); }
+.terminal-pane { position: absolute; inset: 0; padding: 8px; }
+.exited-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(22, 22, 30, 0.85);
+}
+.exited-overlay button {
+  background: var(--accent);
+  color: #16161e;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
