@@ -40,6 +40,15 @@ interface InternalSession {
   spawnedWithResume: boolean
   closing: boolean
   lastSize: { cols: number; rows: number } | null
+  lastPrompt: string | null
+  pendingMessage: string | null
+}
+
+const PROMPT_MAX_LEN = 120
+const MESSAGE_MAX_LEN = 200
+
+function truncatedString(value: unknown, maxLen: number): string | null {
+  return typeof value === 'string' ? value.slice(0, maxLen) : null
 }
 
 export class SessionManager extends EventEmitter {
@@ -60,7 +69,9 @@ export class SessionManager extends EventEmitter {
         spawnedAt: 0,
         spawnedWithResume: false,
         closing: false,
-        lastSize: null
+        lastSize: null,
+        lastPrompt: null,
+        pendingMessage: null
       })
     }
   }
@@ -72,7 +83,9 @@ export class SessionManager extends EventEmitter {
         ...s.meta,
         status: s.status,
         lastActivityAt: s.lastActivityAt,
-        statusChangedAt: s.statusChangedAt
+        statusChangedAt: s.statusChangedAt,
+        activity: s.lastPrompt,
+        needsYouMessage: s.status === 'needs-you' ? s.pendingMessage : null
       }))
   }
 
@@ -88,7 +101,9 @@ export class SessionManager extends EventEmitter {
       spawnedAt: 0,
       spawnedWithResume: false,
       closing: false,
-      lastSize: null
+      lastSize: null,
+      lastPrompt: null,
+      pendingMessage: null
     }
     this.sessions.set(meta.id, session)
     try {
@@ -157,6 +172,7 @@ export class SessionManager extends EventEmitter {
     if (!s?.pty) return
     s.pty.write(data)
     if (data.includes('\r')) {
+      s.pendingMessage = null
       this.transition(s, 'working')
       this.emitChanged()
     }
@@ -183,8 +199,10 @@ export class SessionManager extends EventEmitter {
     }
     if (!s.pty) return
     if (event === 'UserPromptSubmit') {
+      s.lastPrompt = truncatedString(payload.prompt, PROMPT_MAX_LEN)
       this.transition(s, 'working')
     } else if (event === 'Notification') {
+      s.pendingMessage = truncatedString(payload.message, MESSAGE_MAX_LEN)
       this.transition(s, 'needs-you')
     } else if (event === 'Stop') {
       this.transition(s, 'idle')
@@ -243,6 +261,7 @@ export class SessionManager extends EventEmitter {
     const from = s.status
     s.status = to
     s.statusChangedAt = this.deps.now()
+    if (from === 'needs-you') s.pendingMessage = null
     this.emit('status-transition', { id: s.meta.id, name: s.meta.name, from, to })
   }
 

@@ -107,6 +107,68 @@ describe('hook events', () => {
   })
 })
 
+describe('activity and needs-you messages', () => {
+  it('UserPromptSubmit captures the prompt as activity, truncated to 120 chars', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    const long = 'x'.repeat(150)
+    m.handleHookEvent(v.id, 'UserPromptSubmit', { prompt: long })
+    expect(m.list()[0].activity).toBe(long.slice(0, 120))
+  })
+
+  it('Notification captures message as needsYouMessage while needs-you, truncated to 200 chars', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    const long = 'y'.repeat(250)
+    m.handleHookEvent(v.id, 'Notification', { message: long })
+    expect(m.list()[0].status).toBe('needs-you')
+    expect(m.list()[0].needsYouMessage).toBe(long.slice(0, 200))
+  })
+
+  it('needsYouMessage is null when the session is not in needs-you', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    expect(m.list()[0].needsYouMessage).toBeNull()
+  })
+
+  it('pendingMessage clears when Stop transitions the session out of needs-you', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'Notification', { message: 'please confirm' })
+    m.handleHookEvent(v.id, 'Stop', {})
+    expect(m.list()[0].status).toBe('idle')
+    expect(m.list()[0].needsYouMessage).toBeNull()
+  })
+
+  it('write with \\r clears pendingMessage (user answered inline) and is safe to repeat', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {}) // idle -> working
+    m.handleHookEvent(v.id, 'Notification', { message: 'please confirm' }) // working -> needs-you
+    m.write(v.id, 'y') // no \r yet, still needs-you
+    expect(m.list()[0].needsYouMessage).toBe('please confirm')
+    m.write(v.id, '\r') // needs-you -> working, real transition, clears pendingMessage
+    expect(m.list()[0].status).toBe('working')
+    expect(m.list()[0].needsYouMessage).toBeNull()
+    // Calling write with \r again while already working is a no-op transition; must not throw
+    // and pendingMessage must remain cleared.
+    expect(() => m.write(v.id, '\r')).not.toThrow()
+    expect(m.list()[0].status).toBe('working')
+    expect(m.list()[0].needsYouMessage).toBeNull()
+  })
+
+  it('garbage payloads (non-string or absent fields) do not crash and yield null', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    expect(() => m.handleHookEvent(v.id, 'UserPromptSubmit', { prompt: 42 })).not.toThrow()
+    expect(m.list()[0].activity).toBeNull()
+    expect(() => m.handleHookEvent(v.id, 'Notification', {})).not.toThrow()
+    expect(m.list()[0].needsYouMessage).toBeNull()
+    expect(() => m.handleHookEvent(v.id, 'Notification', { message: { nested: true } })).not.toThrow()
+    expect(m.list()[0].needsYouMessage).toBeNull()
+  })
+})
+
 describe('write', () => {
   it('forwards keystrokes and flips to working on Enter', () => {
     const m = makeManager()

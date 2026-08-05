@@ -19,6 +19,8 @@ export interface SessionView extends SessionMeta {
   status: SessionStatus
   lastActivityAt: number | null
   statusChangedAt: number
+  activity: string | null
+  needsYouMessage: string | null
 }
 
 export type ShortcutAction =
