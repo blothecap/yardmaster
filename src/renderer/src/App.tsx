@@ -21,8 +21,7 @@ export default function App(): React.JSX.Element {
   const [shellOpen, setShellOpen] = useState<Set<string>>(new Set())
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
   const [shellHeight, setShellHeight] = useState(35) // % of the terminal area
-  const [reviewOpen, setReviewOpen] = useState(false)
-  const [inboxOpen, setInboxOpen] = useState(false)
+  const [rightPane, setRightPane] = useState<'inbox' | 'changes' | null>(null)
 
   // Sidebar groups sessions sharing a directory (worktrees by repo root, plain by cwd);
   // shortcuts follow the same visible order
@@ -59,10 +58,10 @@ export default function App(): React.JSX.Element {
 
   const jumpFromInbox = useCallback((id: string) => {
     switchTo(id)
-    setInboxOpen(false)
+    setRightPane(null)
   }, [switchTo])
 
-  const closeInbox = useCallback(() => setInboxOpen(false), [])
+  const closeRightPane = useCallback(() => setRightPane(null), [])
 
   const toggleShell = useCallback((id: string) => {
     if (shellOpenRef.current.has(id)) {
@@ -91,8 +90,8 @@ export default function App(): React.JSX.Element {
     window.addEventListener('mouseup', onUp)
   }, [])
 
-  // Review pane holds no state across sessions — close it whenever the active session changes
-  useEffect(() => { setReviewOpen(false) }, [activeId])
+  // Changes pane content is per-session — close it on session switch (inbox is global, stays open)
+  useEffect(() => { setRightPane((p) => (p === 'changes' ? null : p)) }, [activeId])
 
   useEffect(() => {
     window.api.init().then((init) => {
@@ -152,7 +151,7 @@ export default function App(): React.JSX.Element {
         if (current) window.api.close(current)
         break
       case 'toggle-inbox':
-        setInboxOpen((o) => !o)
+        setRightPane((p) => (p === 'inbox' ? null : 'inbox'))
         break
       case 'toggle-sidebar':
         setCollapsed((c) => !c)
@@ -164,6 +163,7 @@ export default function App(): React.JSX.Element {
   }, [switchTo, toggleShell])
 
   const activeSession = sessions.find((s) => s.id === activeId) ?? null
+  const needsYouCount = sessions.filter((s) => s.status === 'needs-you').length
 
   if (!claudeFound) {
     return (
@@ -202,13 +202,6 @@ export default function App(): React.JSX.Element {
             sessions.json was corrupt — a backup was saved to {corruptBackup}
           </div>
         )}
-        {inboxOpen && (
-          <Inbox
-            sessions={displaySessions}
-            onJump={jumpFromInbox}
-            onClose={closeInbox}
-          />
-        )}
         <div className="claude-pane-region">
           {sessions.map((s) => (
             <TerminalPane key={s.id} sessionId={s.id} visible={s.id === activeId} />
@@ -221,20 +214,6 @@ export default function App(): React.JSX.Element {
           )}
           {sessions.length === 0 && (
             <div className="empty-state">No sessions yet — press ⌘N to create one.</div>
-          )}
-          {activeSession?.worktree && !reviewOpen && (
-            <button className="changes-btn" onClick={() => setReviewOpen(true)}>
-              Changes
-            </button>
-          )}
-          {activeSession?.worktree && reviewOpen && (
-            <ReviewPane
-              key={activeSession.id}
-              sessionId={activeSession.id}
-              branch={activeSession.worktree.branch}
-              baseBranch={activeSession.worktree.baseBranch}
-              onClose={() => setReviewOpen(false)}
-            />
           )}
         </div>
         <div
@@ -258,6 +237,54 @@ export default function App(): React.JSX.Element {
           ))}
         </div>
       </main>
+      {rightPane && (
+        <aside className="right-pane">
+          {rightPane === 'inbox' && (
+            <Inbox sessions={displaySessions} onJump={jumpFromInbox} onClose={closeRightPane} />
+          )}
+          {rightPane === 'changes' && activeSession?.worktree && (
+            <ReviewPane
+              key={activeSession.id}
+              sessionId={activeSession.id}
+              branch={activeSession.worktree.branch}
+              baseBranch={activeSession.worktree.baseBranch}
+              onClose={closeRightPane}
+            />
+          )}
+          {rightPane === 'changes' && !activeSession?.worktree && (
+            <div className="right-pane-empty">
+              The active session isn't a worktree session. Changes shows a worktree's diff
+              against its base branch.
+            </div>
+          )}
+        </aside>
+      )}
+      <nav className="activity-strip">
+        <button
+          className={`strip-btn${rightPane === 'inbox' ? ' active' : ''}`}
+          title="Waiting on you (⌘E)"
+          onClick={() => setRightPane((p) => (p === 'inbox' ? null : 'inbox'))}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+          </svg>
+          {needsYouCount > 0 && <span className="strip-badge">{needsYouCount}</span>}
+        </button>
+        <button
+          className={`strip-btn${rightPane === 'changes' ? ' active' : ''}`}
+          title={activeSession?.worktree ? 'Changes — worktree diff & merge' : 'Changes (worktree sessions only)'}
+          disabled={!activeSession?.worktree}
+          onClick={() => setRightPane((p) => (p === 'changes' ? null : 'changes'))}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="6" cy="6" r="3" />
+            <circle cx="18" cy="18" r="3" />
+            <path d="M6 9v3a3 3 0 0 0 3 3h3" />
+            <path d="M18 15v-3a3 3 0 0 0-3-3h-3" />
+          </svg>
+        </button>
+      </nav>
       {dialogOpen && (
         <NewSessionDialog
           recentDirs={[...new Set(
