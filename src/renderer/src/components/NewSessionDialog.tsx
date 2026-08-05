@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 interface NewSessionDialogProps {
   recentDirs: string[]
   home: string
+  initialDir?: string
+  initialWorktree?: boolean
   onCreate(name: string, cwd: string, worktree: boolean): void
   onCancel(): void
 }
@@ -21,9 +23,9 @@ function shortPath(p: string, home: string): string {
 
 export default function NewSessionDialog(props: NewSessionDialogProps): React.JSX.Element {
   const [name, setName] = useState('')
-  const [cwd, setCwd] = useState(props.recentDirs[0] ?? props.home)
+  const [cwd, setCwd] = useState(props.initialDir ?? props.recentDirs[0] ?? props.home)
   const [repoRoot, setRepoRoot] = useState<string | null>(null)
-  const [worktree, setWorktree] = useState(false)
+  const [worktree, setWorktree] = useState(props.initialWorktree ?? false)
 
   useEffect(() => {
     let stale = false

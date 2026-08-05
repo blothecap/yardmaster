@@ -14,6 +14,7 @@ interface SidebarProps {
   onRemove(id: string): void
   onReorder(ids: string[]): void
   onNew(): void
+  onNewInProject(dir: string, worktree: boolean): void
 }
 
 function shortCwd(cwd: string, home: string): string {
@@ -130,6 +131,22 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
                 <span className="dot dot-needs-you" />
               )}
               {isCollapsed && <span className="group-count">{members.length}</span>}
+              <span className="group-actions">
+                <button
+                  className="group-action-btn"
+                  title="New session in this project"
+                  onClick={(e) => { e.stopPropagation(); props.onNewInProject(groupKey, false) }}
+                >
+                  +
+                </button>
+                <button
+                  className="group-action-btn"
+                  title="New worktree session in this project (isolated copy)"
+                  onClick={(e) => { e.stopPropagation(); props.onNewInProject(groupKey, true) }}
+                >
+                  ⎇
+                </button>
+              </span>
             </li>
           )}
           {!isCollapsed && (

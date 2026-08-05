@@ -18,6 +18,7 @@ export default function App(): React.JSX.Element {
   const [home, setHome] = useState('')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogPrefill, setDialogPrefill] = useState<{ dir: string; worktree: boolean } | null>(null)
   const [shellOpen, setShellOpen] = useState<Set<string>>(new Set())
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
   const [shellHeight, setShellHeight] = useState(35) // % of the terminal area
@@ -193,7 +194,8 @@ export default function App(): React.JSX.Element {
           onRenameEnd={() => setRenamingId(null)}
           onRemove={(id) => window.api.remove(id)}
           onReorder={(ids) => window.api.reorder(ids)}
-          onNew={() => setDialogOpen(true)}
+          onNew={() => { setDialogPrefill(null); setDialogOpen(true) }}
+          onNewInProject={(dir, worktree) => { setDialogPrefill({ dir, worktree }); setDialogOpen(true) }}
         />
       )}
       <main className="terminal-area" ref={mainRef}>
@@ -287,6 +289,8 @@ export default function App(): React.JSX.Element {
       </nav>
       {dialogOpen && (
         <NewSessionDialog
+          initialDir={dialogPrefill?.dir}
+          initialWorktree={dialogPrefill?.worktree}
           recentDirs={[...new Set(
             [...sessions]
               .sort((a, b) => (b.lastActivityAt ?? b.statusChangedAt) - (a.lastActivityAt ?? a.statusChangedAt))
