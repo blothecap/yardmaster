@@ -8,6 +8,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "postinstall": "electron-rebuild -f -w node-pty"
   },
   "dependencies": {

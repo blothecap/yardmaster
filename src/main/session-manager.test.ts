@@ -220,6 +220,32 @@ describe('reorder and rename', () => {
   })
 })
 
+describe('spawn failures', () => {
+  it('create removes the session and rethrows when the spawner throws', () => {
+    const m = new SessionManager({
+      store,
+      spawner: () => { throw new Error('spawn failed') },
+      writeSettings: () => '/fake.json',
+      now: () => clock.t
+    })
+    expect(() => m.create('a', '/nope')).toThrow(/spawn failed/)
+    expect(m.list()).toHaveLength(0)
+    expect(store.load().sessions).toHaveLength(0)
+  })
+
+  it('activate marks the session exited when the spawner throws', () => {
+    store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: 'cs-1', order: 0 }])
+    const m = new SessionManager({
+      store,
+      spawner: () => { throw new Error('spawn failed') },
+      writeSettings: () => '/fake.json',
+      now: () => clock.t
+    })
+    m.activate('x1')
+    expect(m.list()[0].status).toBe('exited')
+  })
+})
+
 describe('late events after close/respawn', () => {
   it('ignores status hooks for sessions with no live pty', () => {
     const m = makeManager()

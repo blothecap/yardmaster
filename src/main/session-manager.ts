@@ -86,7 +86,12 @@ export class SessionManager extends EventEmitter {
       closing: false
     }
     this.sessions.set(meta.id, session)
-    this.spawn(session, null)
+    try {
+      this.spawn(session, null)
+    } catch (err) {
+      this.sessions.delete(meta.id)
+      throw err
+    }
     this.persist()
     return this.list().find((v) => v.id === meta.id)!
   }
@@ -94,8 +99,12 @@ export class SessionManager extends EventEmitter {
   activate(id: string): void {
     const s = this.sessions.get(id)
     if (!s || s.pty) return
-    this.spawn(s, s.meta.claudeSessionId)
-    this.transition(s, 'idle')
+    try {
+      this.spawn(s, s.meta.claudeSessionId)
+      this.transition(s, 'idle')
+    } catch {
+      this.transition(s, 'exited')
+    }
     this.emitChanged()
   }
 

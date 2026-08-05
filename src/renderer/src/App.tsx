@@ -34,7 +34,10 @@ export default function App(): React.JSX.Element {
       setCorruptBackup(init.corruptBackupPath)
       setHome(init.home)
       setSessions(init.sessions)
-      if (init.sessions.length > 0) switchTo(init.sessions[0].id)
+      if (init.sessions.length > 0) {
+        setActiveId(init.sessions[0].id)
+        window.api.setActive(init.sessions[0].id)
+      }
     })
     const offChanged = window.api.onChanged((views) => {
       setSessions(views)
@@ -147,9 +150,13 @@ export default function App(): React.JSX.Element {
           )]}
           home={home}
           onCreate={async (name, cwd) => {
-            const view = await window.api.create(name, cwd)
-            setDialogOpen(false)
-            switchTo(view.id)
+            try {
+              const view = await window.api.create(name, cwd)
+              setDialogOpen(false)
+              switchTo(view.id)
+            } catch (err) {
+              alert(`Could not create session: ${err instanceof Error ? err.message : err}`)
+            }
           }}
           onCancel={() => setDialogOpen(false)}
         />

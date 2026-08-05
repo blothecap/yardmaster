@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, Notification } from 'electron'
 import path from 'node:path'
+import fs from 'node:fs'
 import * as pty from 'node-pty' // CJS module — namespace import, not default
 import type { ShortcutAction } from '../shared/types'
 import { Store } from './store'
@@ -31,10 +32,15 @@ function createWindow(): void {
   } else {
     win.loadFile(path.join(import.meta.dirname, '../renderer/index.html'))
   }
+  win.on('closed', () => { win = null })
+}
+
+function safeSend(channel: string, payload?: unknown): void {
+  if (win && !win.isDestroyed()) win.webContents.send(channel, payload)
 }
 
 function sendShortcut(action: ShortcutAction): void {
-  win?.webContents.send('app:shortcut', action)
+  safeSend('app:shortcut', action)
 }
 
 function buildMenu(): void {
@@ -74,85 +80,97 @@ function buildMenu(): void {
 }
 
 app.whenReady().then(async () => {
-  buildMenu()
+  try {
+    buildMenu()
 
-  const claudePath = await resolveClaudePath()
-  const hookServer = new HookServer()
-  const port = await hookServer.start()
-  const userData = app.getPath('userData')
-  const store = new Store(path.join(userData, 'sessions.json'))
-  const { corruptBackupPath } = store.load()
-  const settingsDir = path.join(userData, 'session-settings')
+    const claudePath = await resolveClaudePath()
+    const hookServer = new HookServer()
+    const port = await hookServer.start()
+    const userData = app.getPath('userData')
+    const store = new Store(path.join(userData, 'sessions.json'))
+    const { corruptBackupPath } = store.load()
+    const settingsDir = path.join(userData, 'session-settings')
 
-  const adapt = (proc: pty.IPty) => ({
-    onData: (cb: (d: string) => void) => proc.onData(cb),
-    onExit: (cb: (e: { exitCode: number }) => void) => proc.onExit(cb),
-    write: (d: string) => proc.write(d),
-    resize: (c: number, r: number) => proc.resize(c, r),
-    kill: () => proc.kill()
-  })
-  const spawner = (opts: SpawnOpts): ReturnType<typeof adapt> => {
-    if (!claudePath) throw new Error('claude binary not found — cannot spawn session')
-    const args = ['--settings', opts.settingsPath, ...(opts.resumeId ? ['--resume', opts.resumeId] : [])]
-    const proc = pty.spawn(claudePath, args, {
-      name: 'xterm-256color',
-      cols: 80,
-      rows: 24,
-      cwd: opts.cwd,
-      env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>
+    const adapt = (proc: pty.IPty) => ({
+      onData: (cb: (d: string) => void) => proc.onData(cb),
+      onExit: (cb: (e: { exitCode: number }) => void) => proc.onExit(cb),
+      write: (d: string) => proc.write(d),
+      resize: (c: number, r: number) => proc.resize(c, r),
+      kill: () => proc.kill()
     })
-    return adapt(proc)
-  }
-
-  manager = new SessionManager({
-    store,
-    spawner,
-    writeSettings: (appSessionId) => writeSessionSettings(settingsDir, port, appSessionId)
-  })
-
-  hookServer.onEvent((id, event, payload) => manager!.handleHookEvent(id, event, payload))
-
-  manager.on('changed', (views) => {
-    win?.webContents.send('sessions:changed', views)
-    app.setBadgeCount(views.filter((v: { status: string }) => v.status === 'needs-you').length)
-  })
-  manager.on('data', (id, chunk) => win?.webContents.send('sessions:data', { id, data: chunk }))
-  manager.on('status-transition', (t) => {
-    if (shouldNotify(t, manager!.getActiveId())) {
-      const n = new Notification({
-        title: t.name,
-        body: t.to === 'needs-you' ? 'Needs your input' : 'Finished responding'
+    const spawner = (opts: SpawnOpts): ReturnType<typeof adapt> => {
+      if (!claudePath) throw new Error('claude binary not found — cannot spawn session')
+      const args = ['--settings', opts.settingsPath, ...(opts.resumeId ? ['--resume', opts.resumeId] : [])]
+      const proc = pty.spawn(claudePath, args, {
+        name: 'xterm-256color',
+        cols: 80,
+        rows: 24,
+        cwd: opts.cwd,
+        env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>
       })
-      n.on('click', () => {
-        win?.show()
-        win?.webContents.send('sessions:focus', t.id)
-      })
-      n.show()
+      return adapt(proc)
     }
-  })
 
-  // IPC
-  ipcMain.handle('app:init', () => ({
-    claudeFound: claudePath !== null,
-    corruptBackupPath,
-    home: app.getPath('home'),
-    sessions: manager!.list()
-  }))
-  ipcMain.handle('sessions:create', (_e, { name, cwd }) => manager!.create(name, cwd))
-  ipcMain.handle('sessions:activate', (_e, id) => manager!.activate(id))
-  ipcMain.handle('sessions:setActive', (_e, id) => manager!.setActive(id))
-  ipcMain.handle('sessions:rename', (_e, { id, name }) => manager!.rename(id, name))
-  ipcMain.handle('sessions:close', (_e, id) => manager!.close(id))
-  ipcMain.handle('sessions:remove', (_e, id) => manager!.remove(id))
-  ipcMain.handle('sessions:reorder', (_e, ids) => manager!.reorder(ids))
-  ipcMain.on('sessions:input', (_e, { id, data }) => manager!.write(id, data))
-  ipcMain.on('sessions:resize', (_e, { id, cols, rows }) => manager!.resize(id, cols, rows))
-  ipcMain.handle('app:pickDirectory', async () => {
-    const result = await dialog.showOpenDialog(win!, { properties: ['openDirectory', 'createDirectory'] })
-    return result.canceled ? null : result.filePaths[0]
-  })
+    manager = new SessionManager({
+      store,
+      spawner,
+      writeSettings: (appSessionId) => writeSessionSettings(settingsDir, port, appSessionId)
+    })
 
-  createWindow()
+    hookServer.onEvent((id, event, payload) => manager!.handleHookEvent(id, event, payload))
+
+    manager.on('changed', (views) => {
+      safeSend('sessions:changed', views)
+      app.setBadgeCount(views.filter((v: { status: string }) => v.status === 'needs-you').length)
+    })
+    manager.on('data', (id, chunk) => safeSend('sessions:data', { id, data: chunk }))
+    manager.on('status-transition', (t) => {
+      if (shouldNotify(t, manager!.getActiveId())) {
+        const n = new Notification({
+          title: t.name,
+          body: t.to === 'needs-you' ? 'Needs your input' : 'Finished responding'
+        })
+        n.on('click', () => {
+          if (win && !win.isDestroyed()) {
+            win.show()
+            safeSend('sessions:focus', t.id)
+          }
+        })
+        n.show()
+      }
+    })
+
+    // IPC
+    ipcMain.handle('app:init', () => ({
+      claudeFound: claudePath !== null,
+      corruptBackupPath,
+      home: app.getPath('home'),
+      sessions: manager!.list()
+    }))
+    ipcMain.handle('sessions:create', (_e, { name, cwd }) => {
+      let ok = false
+      try { ok = fs.statSync(cwd).isDirectory() } catch { ok = false }
+      if (!ok) throw new Error(`not a directory: ${cwd}`)
+      return manager!.create(name, cwd)
+    })
+    ipcMain.handle('sessions:activate', (_e, id) => manager!.activate(id))
+    ipcMain.handle('sessions:setActive', (_e, id) => manager!.setActive(id))
+    ipcMain.handle('sessions:rename', (_e, { id, name }) => manager!.rename(id, name))
+    ipcMain.handle('sessions:close', (_e, id) => manager!.close(id))
+    ipcMain.handle('sessions:remove', (_e, id) => manager!.remove(id))
+    ipcMain.handle('sessions:reorder', (_e, ids) => manager!.reorder(ids))
+    ipcMain.on('sessions:input', (_e, { id, data }) => manager!.write(id, data))
+    ipcMain.on('sessions:resize', (_e, { id, cols, rows }) => manager!.resize(id, cols, rows))
+    ipcMain.handle('app:pickDirectory', async () => {
+      const result = await dialog.showOpenDialog(win!, { properties: ['openDirectory', 'createDirectory'] })
+      return result.canceled ? null : result.filePaths[0]
+    })
+
+    createWindow()
+  } catch (err) {
+    dialog.showErrorBox('Claude Terminal failed to start', err instanceof Error ? err.stack ?? err.message : String(err))
+    app.quit()
+  }
 })
 
 app.on('before-quit', () => manager?.disposeAll())
