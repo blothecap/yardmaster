@@ -35,7 +35,7 @@ export default function App(): React.JSX.Element {
       setSessions(init.sessions)
       if (init.sessions.length > 0) switchTo(init.sessions[0].id)
     })
-    window.api.onChanged((views) => {
+    const offChanged = window.api.onChanged((views) => {
       setSessions(views)
       const current = activeIdRef.current
       if (current && !views.some((s) => s.id === current)) {
@@ -44,9 +44,10 @@ export default function App(): React.JSX.Element {
         window.api.setActive(next)
       }
     })
-    window.api.onFocus((id) => switchTo(id))
-    window.api.onShortcut((action) => handleShortcut(action))
-    window.api.onData((id, data) => getTerminal(id)?.write(data))
+    const offFocus = window.api.onFocus((id) => switchTo(id))
+    const offShortcut = window.api.onShortcut((action) => handleShortcut(action))
+    const offData = window.api.onData((id, data) => getTerminal(id)?.write(data))
+    return () => { offChanged(); offFocus(); offShortcut(); offData() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

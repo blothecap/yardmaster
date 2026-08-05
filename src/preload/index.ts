@@ -22,17 +22,25 @@ const api = {
   resize: (id: string, cols: number, rows: number): void =>
     ipcRenderer.send('sessions:resize', { id, cols, rows }),
   pickDirectory: (): Promise<string | null> => ipcRenderer.invoke('app:pickDirectory'),
-  onChanged: (cb: (views: SessionView[]) => void): void => {
-    ipcRenderer.on('sessions:changed', (_e, views) => cb(views))
+  onChanged: (cb: (views: SessionView[]) => void): (() => void) => {
+    const h = (_e: Electron.IpcRendererEvent, views: SessionView[]): void => cb(views)
+    ipcRenderer.on('sessions:changed', h)
+    return () => ipcRenderer.removeListener('sessions:changed', h)
   },
-  onData: (cb: (id: string, data: string) => void): void => {
-    ipcRenderer.on('sessions:data', (_e, { id, data }) => cb(id, data))
+  onData: (cb: (id: string, data: string) => void): (() => void) => {
+    const h = (_e: Electron.IpcRendererEvent, p: { id: string; data: string }): void => cb(p.id, p.data)
+    ipcRenderer.on('sessions:data', h)
+    return () => ipcRenderer.removeListener('sessions:data', h)
   },
-  onFocus: (cb: (id: string) => void): void => {
-    ipcRenderer.on('sessions:focus', (_e, id) => cb(id))
+  onFocus: (cb: (id: string) => void): (() => void) => {
+    const h = (_e: Electron.IpcRendererEvent, id: string): void => cb(id)
+    ipcRenderer.on('sessions:focus', h)
+    return () => ipcRenderer.removeListener('sessions:focus', h)
   },
-  onShortcut: (cb: (action: ShortcutAction) => void): void => {
-    ipcRenderer.on('app:shortcut', (_e, action) => cb(action))
+  onShortcut: (cb: (action: ShortcutAction) => void): (() => void) => {
+    const h = (_e: Electron.IpcRendererEvent, action: ShortcutAction): void => cb(action)
+    ipcRenderer.on('app:shortcut', h)
+    return () => ipcRenderer.removeListener('app:shortcut', h)
   }
 }
 
