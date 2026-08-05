@@ -17,8 +17,9 @@ Run through this before declaring a build good. Prereq: `claude` installed and l
 - [ ] ⌘T opens a shell pane below the Claude pane, cd'd to the session's directory (`pwd` to confirm)
 - [ ] Shell keeps scrollback when hidden (⌘T ⌘T) and across session switches
 - [ ] Each session gets its own shell; switching sessions switches shells
-- [ ] `exit` in the shell shows the "shell exited" note; ⌘T (or click) restarts it
-- [ ] Closing/removing a session kills its shell
+- [ ] Dragging the divider between the panes resizes the shell (clamped ~15–80%); both terminals reflow
+- [ ] `exit` in the shell closes the pane entirely; next ⌘T opens a fresh shell
+- [ ] Closing/removing a session kills its shell and its pane disappears
 - [ ] ⌘E jumps to the needs-you session
 
 ## Notifications

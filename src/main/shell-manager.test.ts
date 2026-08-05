@@ -73,12 +73,16 @@ describe('ShellManager', () => {
     expect(exit).toHaveBeenCalledWith('s1')
   })
 
-  it('kill terminates the pty and is a no-op when absent', () => {
+  it('kill terminates the pty, emits exit, and is a no-op when absent', () => {
+    const exit = vi.fn()
+    m.on('exit', exit)
     m.ensure('s1', '/tmp')
     m.kill('s1')
     expect(spawns[0].pty.killed).toBe(true)
     expect(m.isRunning('s1')).toBe(false)
+    expect(exit).toHaveBeenCalledWith('s1')
     expect(() => m.kill('ghost')).not.toThrow()
+    expect(exit).toHaveBeenCalledTimes(1)
   })
 
   it('ignores stale callbacks from a replaced pty', () => {

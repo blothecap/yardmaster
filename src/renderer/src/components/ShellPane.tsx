@@ -7,15 +7,12 @@ import { registerTerminal, unregisterTerminal } from '../terminal-registry'
 interface ShellPaneProps {
   sessionId: string
   visible: boolean
-  exited: boolean
-  onRestart(): void
 }
 
-export default function ShellPane({ sessionId, visible, exited, onRestart }: ShellPaneProps): React.JSX.Element {
+export default function ShellPane({ sessionId, visible }: ShellPaneProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const fitRef = useRef<FitAddon | null>(null)
   const termRef = useRef<Terminal | null>(null)
-  const registryKey = `shell:${sessionId}`
 
   useEffect(() => {
     const { term, fit } = createTerm()
@@ -23,6 +20,7 @@ export default function ShellPane({ sessionId, visible, exited, onRestart }: She
     fit.fit()
     term.onData((data) => window.api.shellInput(sessionId, data))
     term.onResize(({ cols, rows }) => window.api.shellResize(sessionId, cols, rows))
+    const registryKey = `shell:${sessionId}`
     registerTerminal(registryKey, term)
     termRef.current = term
     fitRef.current = fit
@@ -35,24 +33,18 @@ export default function ShellPane({ sessionId, visible, exited, onRestart }: She
       observer.disconnect()
       unregisterTerminal(registryKey)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId])
 
   useEffect(() => {
-    if (visible && !exited) {
+    if (visible) {
       fitRef.current?.fit()
       termRef.current?.focus()
     }
-  }, [visible, exited])
+  }, [visible])
 
   return (
     <div className="shell-pane" style={{ display: visible ? 'block' : 'none' }}>
       <div ref={containerRef} className="shell-pane-term" />
-      {exited && (
-        <div className="shell-exited-note" onClick={onRestart}>
-          shell exited — ⌘T to restart
-        </div>
-      )}
     </div>
   )
 }

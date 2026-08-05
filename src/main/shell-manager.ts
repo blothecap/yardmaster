@@ -46,6 +46,7 @@ export class ShellManager extends EventEmitter {
     if (!pty) return
     this.shells.delete(sessionId)
     pty.kill()
+    this.emit('exit', sessionId)
   }
 
   disposeAll(): void {

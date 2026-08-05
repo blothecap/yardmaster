@@ -18,7 +18,7 @@ export default function App(): React.JSX.Element {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [shellOpen, setShellOpen] = useState<Set<string>>(new Set())
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
-  const [shellExited, setShellExited] = useState<Set<string>>(new Set())
+  const [shellHeight, setShellHeight] = useState(35) // % of the terminal area
 
   // Refs mirror state that shortcut/event handlers need without re-subscribing
   const sessionsRef = useRef(sessions)
@@ -27,8 +27,7 @@ export default function App(): React.JSX.Element {
   activeIdRef.current = activeId
   const shellOpenRef = useRef(shellOpen)
   shellOpenRef.current = shellOpen
-  const shellExitedRef = useRef(shellExited)
-  shellExitedRef.current = shellExited
+  const mainRef = useRef<HTMLElement>(null)
 
   const switchTo = useCallback((id: string) => {
     setActiveId(id)
@@ -36,25 +35,32 @@ export default function App(): React.JSX.Element {
     window.api.activate(id)
   }, [])
 
-  const restartShell = useCallback((id: string) => {
-    window.api.shellEnsure(id)
-    setShellExited((prev) => { const n = new Set(prev); n.delete(id); return n })
-  }, [])
-
   const toggleShell = useCallback((id: string) => {
     if (shellOpenRef.current.has(id)) {
-      if (shellExitedRef.current.has(id)) {
-        restartShell(id)
-      } else {
-        setShellOpen((prev) => { const n = new Set(prev); n.delete(id); return n })
-      }
+      setShellOpen((prev) => { const n = new Set(prev); n.delete(id); return n })
     } else {
       window.api.shellEnsure(id)
       setShellCreated((prev) => new Set(prev).add(id))
-      setShellExited((prev) => { const n = new Set(prev); n.delete(id); return n })
       setShellOpen((prev) => new Set(prev).add(id))
     }
-  }, [restartShell])
+  }, [])
+
+  const startDividerDrag = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    const main = mainRef.current
+    if (!main) return
+    const onMove = (ev: MouseEvent): void => {
+      const rect = main.getBoundingClientRect()
+      const pct = ((rect.bottom - ev.clientY) / rect.height) * 100
+      setShellHeight(Math.min(80, Math.max(15, pct)))
+    }
+    const onUp = (): void => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [])
 
   useEffect(() => {
     window.api.init().then((init) => {
@@ -81,7 +87,11 @@ export default function App(): React.JSX.Element {
     const offData = window.api.onData((id, data) => getTerminal(id)?.write(data))
     const offStartRename = window.api.onStartRename((id) => setRenamingId(id))
     const offShellData = window.api.onShellData((id, data) => getTerminal(`shell:${id}`)?.write(data))
-    const offShellExit = window.api.onShellExit((id) => setShellExited((prev) => new Set(prev).add(id)))
+    const offShellExit = window.api.onShellExit((id) => {
+      // shell ended (user typed exit, or its session closed) — the pane goes away
+      setShellOpen((prev) => { const n = new Set(prev); n.delete(id); return n })
+      setShellCreated((prev) => { const n = new Set(prev); n.delete(id); return n })
+    })
     return () => { offChanged(); offFocus(); offShortcut(); offData(); offStartRename(); offShellData(); offShellExit() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -156,7 +166,7 @@ export default function App(): React.JSX.Element {
           onNew={() => setDialogOpen(true)}
         />
       )}
-      <main className="terminal-area">
+      <main className="terminal-area" ref={mainRef}>
         {corruptBackup && (
           <div className="banner">
             sessions.json was corrupt — a backup was saved to {corruptBackup}
@@ -177,16 +187,22 @@ export default function App(): React.JSX.Element {
           )}
         </div>
         <div
-          className="shell-split"
+          className="shell-divider"
           style={{ display: activeId && shellOpen.has(activeId) ? 'block' : 'none' }}
+          onMouseDown={startDividerDrag}
+        />
+        <div
+          className="shell-split"
+          style={{
+            display: activeId && shellOpen.has(activeId) ? 'block' : 'none',
+            height: `${shellHeight}%`
+          }}
         >
           {sessions.filter((s) => shellCreated.has(s.id)).map((s) => (
             <ShellPane
               key={s.id}
               sessionId={s.id}
               visible={s.id === activeId && shellOpen.has(s.id)}
-              exited={shellExited.has(s.id)}
-              onRestart={() => restartShell(s.id)}
             />
           ))}
         </div>

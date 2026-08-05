@@ -169,22 +169,19 @@ body {
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .terminal-area { display: flex; flex-direction: column; }
 .claude-pane-region { flex: 1; position: relative; min-height: 0; }
+.shell-divider {
+  height: 6px;
+  flex-shrink: 0;
+  background: #101014;
+  border-top: 1px solid var(--bg-active);
+  border-bottom: 1px solid var(--bg-active);
+  cursor: row-resize;
+}
+.shell-divider:hover, .shell-divider:active { background: var(--accent); }
 .shell-split {
-  height: 35%;
-  min-height: 120px;
-  border-top: 1px solid #101014;
+  min-height: 100px;
   position: relative;
+  flex-shrink: 0;
 }
 .shell-pane { position: absolute; inset: 0; }
 .shell-pane-term { position: absolute; inset: 0; padding: 8px; }
-.shell-exited-note {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(22, 22, 30, 0.85);
-  color: var(--fg-dim);
-  font-size: 12px;
-  cursor: pointer;
-}
