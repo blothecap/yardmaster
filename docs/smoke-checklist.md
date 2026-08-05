@@ -21,13 +21,12 @@ Run through this before declaring a build good. Prereq: `claude` installed and l
 - [ ] Both sessions can edit the same file without touching each other's copy
 - [ ] Removing (× or right-click) shows the 3-option dialog; "keep branch" leaves the branch in `git branch`; "delete" removes worktree + branch
 
-## Embedded shell (⌘T)
-- [ ] ⌘T opens a shell pane below the Claude pane, cd'd to the session's directory (`pwd` to confirm)
-- [ ] Shell keeps scrollback when hidden (⌘T ⌘T) and across session switches
-- [ ] Each session gets its own shell; switching sessions switches shells
-- [ ] Dragging the divider between the panes resizes the shell (clamped ~15–80%); both terminals reflow
-- [ ] `exit` in the shell closes the pane entirely; next ⌘T opens a fresh shell
-- [ ] Closing/removing a session kills its shell and its pane disappears
+## Embedded shell (⌘T / strip button)
+- [ ] ⌘T (or the terminal strip icon) opens the Shell view in the right pane, cd'd to the session's directory (`pwd` to confirm)
+- [ ] Shell keeps scrollback when the pane is toggled closed and reopened, and across session switches
+- [ ] Each session gets its own shell; switching sessions switches shells; a session without one shows the "Open shell" button
+- [ ] `exit` in the shell returns the pane to the "Open shell" button; opening again spawns fresh
+- [ ] Closing/removing a session kills its shell
 - [ ] ⌘E jumps to the needs-you session
 
 ## Notifications

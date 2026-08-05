@@ -158,15 +158,15 @@ with a confirmation.
   worktree rows show `⎇ branch`. Shortcuts follow the grouped visible order.
   Removing a worktree session always asks: delete copy & branch / delete copy,
   keep branch / cancel. Plain (non-worktree) sessions are unchanged.
-- Embedded shell (added post-v1): `Cmd+T` toggles a split pane below the
-  active Claude session running the user's login shell in that session's cwd,
-  separated by a visible draggable divider (resizable 15–80% of the area,
-  default 35%). One lazy shell per session; survives hidden-toggling and
-  session switches; killed with its session or app quit; no persistence.
-  When the shell exits (user types `exit`, or its session closes), the pane
-  closes; the next `Cmd+T` opens a fresh shell. This narrows v1's "all shell
-  work stays in the external terminal" stance to "quick verify-loop shell
-  work can happen in-app".
+- Embedded shell (added post-v1, revised): `Cmd+T` (or the terminal icon in
+  the right activity strip) toggles a Shell view in the right pane, running
+  the user's login shell in the active session's cwd. One lazy shell per
+  session; the pane follows the active session (a session without a shell
+  shows a one-click "open shell" button — no surprise spawns while cycling).
+  Shells survive pane-toggling and session switches; killed with their
+  session or app quit; when a shell exits the next open spawns fresh. This
+  narrows v1's "all shell work stays in the external terminal" stance to
+  "quick verify-loop shell work can happen in-app".
 - v1 styling minimal: one good monospace font, dark theme only.
 
 ### Keyboard shortcuts (hardcoded in v1)
