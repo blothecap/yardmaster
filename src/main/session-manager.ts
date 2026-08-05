@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import crypto from 'node:crypto'
-import type { HookEvent, SessionMeta, SessionStatus, SessionView } from '../shared/types'
+import type { HookEvent, SessionMeta, SessionStatus, SessionView, TranscriptCost } from '../shared/types'
 import type { Store } from './store'
 
 export interface PtyLike {
@@ -45,6 +45,7 @@ interface InternalSession {
   lastPrompt: string | null
   pendingMessage: string | null
   buffer: string
+  cost: TranscriptCost | null
 }
 
 const PROMPT_MAX_LEN = 120
@@ -79,7 +80,8 @@ export class SessionManager extends EventEmitter {
         lastSize: null,
         lastPrompt: null,
         pendingMessage: null,
-        buffer: ''
+        buffer: '',
+        cost: null
       })
     }
   }
@@ -93,7 +95,8 @@ export class SessionManager extends EventEmitter {
         lastActivityAt: s.lastActivityAt,
         statusChangedAt: s.statusChangedAt,
         activity: s.lastPrompt,
-        needsYouMessage: s.status === 'needs-you' ? s.pendingMessage : null
+        needsYouMessage: s.status === 'needs-you' ? s.pendingMessage : null,
+        cost: s.cost
       }))
   }
 
@@ -112,7 +115,8 @@ export class SessionManager extends EventEmitter {
       lastSize: null,
       lastPrompt: null,
       pendingMessage: null,
-      buffer: ''
+      buffer: '',
+      cost: null
     }
     this.sessions.set(meta.id, session)
     try {
@@ -186,6 +190,14 @@ export class SessionManager extends EventEmitter {
       this.transition(s, 'working')
       this.emitChanged()
     }
+  }
+
+  /** Runtime-only (not persisted) — set from a transcript read after a Stop hook. */
+  setCost(id: string, cost: TranscriptCost): void {
+    const s = this.sessions.get(id)
+    if (!s) return
+    s.cost = cost
+    this.emitChanged()
   }
 
   resize(id: string, cols: number, rows: number): void {

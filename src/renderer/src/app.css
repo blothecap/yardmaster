@@ -85,6 +85,7 @@ body {
 .session-name { font-weight: 500; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-cwd { color: var(--fg-dim); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-time { color: var(--fg-dim); font-size: 9.5px; }
+.session-cost { color: var(--fg-dim); font-size: 9.5px; margin-left: 4px; opacity: 0.75; }
 .session-row input {
   flex: 1;
   background: var(--bg);

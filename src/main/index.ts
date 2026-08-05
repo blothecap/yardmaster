@@ -12,6 +12,7 @@ import { resolveClaudePath } from './claude-path'
 import { shouldNotify } from './notify-policy'
 import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
 import { changedFiles, fileDiff, mergeBranch, pushAndCreatePr } from './git-review'
+import { sessionCost } from './transcript-cost'
 
 let win: BrowserWindow | null = null
 let manager: SessionManager | null = null
@@ -140,7 +141,14 @@ app.whenReady().then(async () => {
     shellManager.on('data', (id, chunk) => safeSend('shell:data', { id, data: chunk }))
     shellManager.on('exit', (id) => safeSend('shell:exit', id))
 
-    hookServer.onEvent((id, event, payload) => manager!.handleHookEvent(id, event, payload))
+    hookServer.onEvent((id, event, payload) => {
+      manager!.handleHookEvent(id, event, payload)
+      if (event === 'Stop' && typeof payload.transcript_path === 'string') {
+        sessionCost(payload.transcript_path)
+          .then((c) => manager!.setCost(id, c))
+          .catch(() => {})
+      }
+    })
 
     manager.on('changed', (views) => {
       safeSend('sessions:changed', views)

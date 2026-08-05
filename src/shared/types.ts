@@ -15,6 +15,12 @@ export interface SessionMeta {
   lastActivityAt?: number | null
 }
 
+export interface TranscriptCost {
+  costUsd: number | null
+  inputTokens: number
+  outputTokens: number
+}
+
 /** Pushed to the renderer */
 export interface SessionView extends SessionMeta {
   status: SessionStatus
@@ -22,6 +28,7 @@ export interface SessionView extends SessionMeta {
   statusChangedAt: number
   activity: string | null
   needsYouMessage: string | null
+  cost: TranscriptCost | null
 }
 
 export interface ChangedFile {

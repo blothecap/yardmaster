@@ -49,6 +49,21 @@ function relativeTime(ts: number | null): string {
   return `${Math.floor(s / 86400)}d`
 }
 
+function costChip(cost: SessionView['cost']): { text: string; title: string } | null {
+  if (!cost) return null
+  const { costUsd, inputTokens, outputTokens } = cost
+  const exact =
+    costUsd !== null
+      ? `$${costUsd.toFixed(4)} · ${inputTokens} in / ${outputTokens} out tokens`
+      : `${inputTokens} in / ${outputTokens} out tokens`
+  if (costUsd !== null && costUsd >= 0.005) return { text: `$${costUsd.toFixed(2)}`, title: exact }
+  if (costUsd !== null && costUsd > 0) return { text: '<1¢', title: exact }
+  if (costUsd === null && inputTokens + outputTokens > 0) {
+    return { text: `${Math.round((inputTokens + outputTokens) / 1000)}k tok`, title: exact }
+  }
+  return null
+}
+
 export default function Sidebar(props: SidebarProps): React.JSX.Element {
   const dragId = useRef<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -115,6 +130,7 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
           const startsGroup = !prev || keyOf(prev) !== groupKey
           const isCollapsed = collapsedGroups.has(groupKey)
           const members = props.sessions.filter((t) => keyOf(t) === groupKey)
+          const chip = costChip(s.cost)
           return (
           <Fragment key={s.id}>
           {startsGroup && (
@@ -198,6 +214,11 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
               </div>
             )}
             <span className="session-time">{relativeTime(s.lastActivityAt)}</span>
+            {chip && (
+              <span className="session-cost" title={chip.title}>
+                {chip.text}
+              </span>
+            )}
             <button
               className="remove-btn"
               title="Remove session"

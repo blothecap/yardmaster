@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { SessionManager, type PtyLike, type SpawnOpts } from './session-manager'
 import { Store } from './store'
+import type { TranscriptCost } from './transcript-cost'
 
 class FakePty implements PtyLike {
   dataCb: ((d: string) => void) | null = null
@@ -536,5 +537,38 @@ describe('late events after close/respawn', () => {
     expect(chunks).toEqual([])
     expect(m.list()[0].status).toBe('idle')
     expect(spawns).toHaveLength(3)
+  })
+})
+
+describe('setCost', () => {
+  it('is null by default and round-trips a cost through list() plus a changed emission', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    expect(v.cost).toBeNull()
+
+    const changes: unknown[] = []
+    m.on('changed', (views) => changes.push(views))
+    const cost: TranscriptCost = { costUsd: 0.0573, inputTokens: 300, outputTokens: 125 }
+    m.setCost(v.id, cost)
+
+    expect(m.list()[0].cost).toEqual(cost)
+    expect(changes).toHaveLength(1)
+    expect((changes[0] as Array<{ cost: TranscriptCost | null }>)[0].cost).toEqual(cost)
+  })
+
+  it('overwrites a previously set cost and is not persisted to the store', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.setCost(v.id, { costUsd: 0.01, inputTokens: 10, outputTokens: 5 })
+    m.setCost(v.id, { costUsd: 0.02, inputTokens: 20, outputTokens: 8 })
+    expect(m.list()[0].cost).toEqual({ costUsd: 0.02, inputTokens: 20, outputTokens: 8 })
+    expect(store.load().sessions[0]).not.toHaveProperty('cost')
+  })
+
+  it('is a no-op for unknown session ids', () => {
+    const m = makeManager()
+    expect(() =>
+      m.setCost('ghost', { costUsd: 1, inputTokens: 1, outputTokens: 1 })
+    ).not.toThrow()
   })
 })
