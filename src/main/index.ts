@@ -14,6 +14,7 @@ import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
 import { ptyEnv } from './clean-env'
 import { changedFiles, fileDiff, mergeBranch, pushAndCreatePr } from './git-review'
 import { sessionCost } from './transcript-cost'
+import { projectInfo } from './project-info'
 
 let win: BrowserWindow | null = null
 let manager: SessionManager | null = null
@@ -200,6 +201,11 @@ app.whenReady().then(async () => {
       }
     })
     ipcMain.handle('app:checkGitRepo', (_e, dir: string) => detectRepoRoot(dir))
+    ipcMain.handle('project:info', (_e, id: string) => {
+      const session = manager!.list().find((s) => s.id === id)
+      if (!session) return { repoRoot: null, branch: null, dirtyFiles: 0, ahead: null }
+      return projectInfo(session.cwd, session.worktree?.baseBranch)
+    })
     ipcMain.handle('sessions:activate', (_e, id) => manager!.activate(id))
     ipcMain.handle('sessions:buffer', (_e, id: string) => manager!.getBuffer(id))
     ipcMain.handle('sessions:setActive', (_e, id) => manager!.setActive(id))

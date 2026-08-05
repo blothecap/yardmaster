@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { SessionView } from '../../../shared/types'
+import ProjectPanel from './ProjectPanel'
+import { keyOf, projectName, relativeTime, shortCwd } from '../session-utils'
 
 interface SidebarProps {
   sessions: SessionView[]
@@ -16,6 +18,7 @@ interface SidebarProps {
   onNew(): void
   onNewInProject(dir: string, worktree: boolean): void
   onOpenInbox(): void
+  activeSession: SessionView | null
 }
 
 function totalUsage(sessions: SessionView[]): string | null {
@@ -30,38 +33,6 @@ function totalUsage(sessions: SessionView[]): string | null {
   if (hasUsd) return `$${usd.toFixed(2)}`
   if (tokens > 0) return `${Math.round(tokens / 1000)}k tok`
   return null
-}
-
-function shortCwd(cwd: string, home: string): string {
-  if (!home) return cwd
-  if (cwd === home) return '~'
-  if (cwd.startsWith(home + '/')) return '~' + cwd.slice(home.length)
-  return cwd
-}
-
-function keyOf(s: SessionView): string {
-  return s.worktree?.repoRoot ?? s.cwd
-}
-
-/** Last path segment; falls back to parent/name when another group shares the basename. */
-function projectName(key: string, allKeys: string[]): string {
-  const parts = key.split('/').filter(Boolean)
-  const base = parts[parts.length - 1] ?? key
-  const clash = allKeys.some((k) => {
-    if (k === key) return false
-    const p = k.split('/').filter(Boolean)
-    return p[p.length - 1] === base
-  })
-  return clash && parts.length >= 2 ? `${parts[parts.length - 2]}/${base}` : base
-}
-
-function relativeTime(ts: number | null): string {
-  if (!ts) return ''
-  const s = Math.floor((Date.now() - ts) / 1000)
-  if (s < 60) return 'now'
-  if (s < 3600) return `${Math.floor(s / 60)}m`
-  if (s < 86400) return `${Math.floor(s / 3600)}h`
-  return `${Math.floor(s / 86400)}d`
 }
 
 function costChip(cost: SessionView['cost']): { text: string; title: string } | null {
@@ -256,6 +227,7 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
           )
         })}
       </ul>
+      {props.activeSession && <ProjectPanel session={props.activeSession} home={props.home} />}
       <div className="sidebar-footer">
         {(() => {
           const working = props.sessions.filter((s) => s.status === 'working').length

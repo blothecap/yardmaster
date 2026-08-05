@@ -13,6 +13,8 @@ const api = {
   create: (name: string, cwd: string, worktree = false, extraArgs = ''): Promise<SessionView> =>
     ipcRenderer.invoke('sessions:create', { name, cwd, worktree, extraArgs }),
   checkGitRepo: (dir: string): Promise<string | null> => ipcRenderer.invoke('app:checkGitRepo', dir),
+  projectInfo: (id: string): Promise<import('../main/project-info').ProjectInfo> =>
+    ipcRenderer.invoke('project:info', id),
   activate: (id: string): Promise<void> => ipcRenderer.invoke('sessions:activate', id),
   buffer: (id: string): Promise<string> => ipcRenderer.invoke('sessions:buffer', id),
   setActive: (id: string | null): Promise<void> => ipcRenderer.invoke('sessions:setActive', id),

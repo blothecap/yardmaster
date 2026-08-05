@@ -209,6 +209,7 @@ export default function App(): React.JSX.Element {
           onNew={() => { setDialogPrefill(null); setDialogOpen(true) }}
           onNewInProject={(dir, worktree) => { setDialogPrefill({ dir, worktree }); setDialogOpen(true) }}
           onOpenInbox={() => setRightPane('inbox')}
+          activeSession={activeSession}
         />
       )}
       {!collapsed && <div className="v-divider" onMouseDown={(e) => startVDrag('left', e)} />}

@@ -67,6 +67,47 @@ body {
 }
 .new-btn:hover, .remove-btn:hover { color: var(--fg); }
 .sidebar ul { list-style: none; flex: 1; overflow-y: auto; }
+.project-panel {
+  border-top: 1px solid #050505;
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.project-panel-header {
+  color: var(--fg-dim);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.project-panel-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.project-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.project-panel-row.dim { color: var(--fg-dim); }
+.project-panel .git-branch { color: var(--accent); font-family: var(--font-mono); font-size: 11px; }
+.project-panel .git-dirty { color: var(--status-working); }
+.project-panel .git-ahead { color: var(--accent); }
+.project-panel .git-clean { color: var(--fg-dim); }
+.project-panel-args {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .sidebar-footer {
   margin-top: auto;
   display: flex;
