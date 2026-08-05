@@ -21,3 +21,82 @@ body {
   font-size: 13px;
   user-select: none;
 }
+.layout { display: flex; }
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid #101014;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.new-btn, .remove-btn {
+  background: none;
+  border: none;
+  color: var(--fg-dim);
+  font-size: 14px;
+  cursor: pointer;
+}
+.new-btn:hover, .remove-btn:hover { color: var(--fg); }
+.sidebar ul { list-style: none; }
+.session-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.session-row:hover { background: var(--bg-hover); }
+.session-row.active { background: var(--bg-active); }
+.session-row .remove-btn { visibility: hidden; }
+.session-row:hover .remove-btn { visibility: visible; }
+.session-labels { flex: 1; min-width: 0; }
+.session-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-cwd { color: var(--fg-dim); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-time { color: var(--fg-dim); font-size: 10px; }
+.session-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  color: var(--fg);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 13px;
+}
+.dot { width: 8px; height: 8px; min-width: 8px; border-radius: 50%; }
+.dot-working { background: var(--status-working); animation: pulse 1.2s ease-in-out infinite; }
+.dot-needs-you { background: var(--status-needs-you); }
+.dot-idle { background: var(--status-idle); }
+.dot-exited { background: var(--status-exited); }
+@keyframes pulse { 50% { opacity: 0.3; } }
+.terminal-area { flex: 1; position: relative; min-width: 0; }
+.banner {
+  background: #3b2d3a;
+  color: #f7768e;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.empty-state, .fullscreen-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--fg-dim);
+  gap: 12px;
+  text-align: center;
+  padding: 40px;
+}
+.fullscreen-message h1 { color: var(--fg); font-size: 20px; }
+.fullscreen-message code { font-family: var(--font-mono); color: var(--accent); }
