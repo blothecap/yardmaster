@@ -76,7 +76,7 @@ function buildMenu(): void {
         { label: 'Previous Session (alt)', accelerator: 'Cmd+Shift+[', click: () => sendShortcut({ type: 'prev' }) },
         { label: 'Next Session (down)', accelerator: 'Cmd+Down', click: () => sendShortcut({ type: 'next' }) },
         { label: 'Previous Session (up)', accelerator: 'Cmd+Up', click: () => sendShortcut({ type: 'prev' }) },
-        { label: 'Oldest Needs-You', accelerator: 'Cmd+E', click: () => sendShortcut({ type: 'oldest-needs-you' }) },
+        { label: 'Waiting on You…', accelerator: 'Cmd+E', click: () => sendShortcut({ type: 'toggle-inbox' }) },
         { type: 'separator' },
         { label: 'Toggle Sidebar', accelerator: 'Cmd+B', click: () => sendShortcut({ type: 'toggle-sidebar' }) }
       ]

@@ -6,6 +6,7 @@ import TerminalPane from './components/TerminalPane'
 import ShellPane from './components/ShellPane'
 import NewSessionDialog from './components/NewSessionDialog'
 import ReviewPane from './components/ReviewPane'
+import Inbox from './components/Inbox'
 import { getTerminal } from './terminal-registry'
 
 export default function App(): React.JSX.Element {
@@ -21,6 +22,7 @@ export default function App(): React.JSX.Element {
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
   const [shellHeight, setShellHeight] = useState(35) // % of the terminal area
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [inboxOpen, setInboxOpen] = useState(false)
 
   // Sidebar groups sessions sharing a directory (worktrees by repo root, plain by cwd);
   // shortcuts follow the same visible order
@@ -142,13 +144,9 @@ export default function App(): React.JSX.Element {
       case 'close':
         if (current) window.api.close(current)
         break
-      case 'oldest-needs-you': {
-        const needy = list
-          .filter((s) => s.status === 'needs-you')
-          .sort((a, b) => a.statusChangedAt - b.statusChangedAt)
-        if (needy[0]) switchTo(needy[0].id)
+      case 'toggle-inbox':
+        setInboxOpen((o) => !o)
         break
-      }
       case 'toggle-sidebar':
         setCollapsed((c) => !c)
         break
@@ -196,6 +194,13 @@ export default function App(): React.JSX.Element {
           <div className="banner">
             sessions.json was corrupt — a backup was saved to {corruptBackup}
           </div>
+        )}
+        {inboxOpen && (
+          <Inbox
+            sessions={displaySessions}
+            onJump={(id) => { switchTo(id); setInboxOpen(false) }}
+            onClose={() => setInboxOpen(false)}
+          />
         )}
         <div className="claude-pane-region">
           {sessions.map((s) => (

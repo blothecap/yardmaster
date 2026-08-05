@@ -35,6 +35,6 @@ export type ShortcutAction =
   | { type: 'new' } // Cmd+N
   | { type: 'rename' } // Cmd+R
   | { type: 'close' } // Cmd+W
-  | { type: 'oldest-needs-you' } // Cmd+E
+  | { type: 'toggle-inbox' } // Cmd+E
   | { type: 'toggle-sidebar' } // Cmd+B
   | { type: 'toggle-shell' } // Cmd+T

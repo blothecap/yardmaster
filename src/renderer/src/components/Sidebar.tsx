@@ -95,11 +95,19 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
             ) : (
               <div className="session-labels">
                 <div className="session-name">{s.name}</div>
-                {s.worktree && (
+                {s.status === 'needs-you' && s.needsYouMessage ? (
+                  <div className="session-cwd needs-line" title={s.needsYouMessage}>
+                    {s.needsYouMessage}
+                  </div>
+                ) : s.activity ? (
+                  <div className="session-cwd" title={s.worktree ? `⎇ ${s.worktree.branch} · ${s.activity}` : s.activity}>
+                    {s.worktree ? `⎇ ${s.worktree.branch} · ${s.activity}` : s.activity}
+                  </div>
+                ) : s.worktree ? (
                   <div className="session-cwd" title={s.cwd}>
                     {`⎇ ${s.worktree.branch}`}
                   </div>
-                )}
+                ) : null}
               </div>
             )}
             <span className="session-time">{relativeTime(s.lastActivityAt)}</span>
