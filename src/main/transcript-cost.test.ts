@@ -66,3 +66,21 @@ describe('sessionCost', () => {
     expect(cost).toEqual({ costUsd: null, inputTokens: 0, outputTokens: 0 })
   })
 })
+
+describe('cache token accounting', () => {
+  it('counts cache creation and cache read tokens as input volume', async () => {
+    const fs = await import('node:fs')
+    const os = await import('node:os')
+    const path = await import('node:path')
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ct-cost-cache-'))
+    const file = path.join(dir, 't.jsonl')
+    fs.writeFileSync(file, JSON.stringify({
+      type: 'assistant',
+      message: { usage: { input_tokens: 2, cache_creation_input_tokens: 100, cache_read_input_tokens: 300, output_tokens: 50 } }
+    }) + '\n')
+    const c = await sessionCost(file)
+    expect(c.inputTokens).toBe(402)
+    expect(c.outputTokens).toBe(50)
+    fs.rmSync(dir, { recursive: true, force: true })
+  })
+})

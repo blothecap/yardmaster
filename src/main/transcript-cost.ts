@@ -42,6 +42,14 @@ export async function sessionCost(transcriptPath: string): Promise<TranscriptCos
       | Record<string, unknown>
       | undefined
     if (usage) {
+      // Cache tokens dominate real Claude Code sessions (input_tokens is often ~2);
+      // count them as input so the meter reflects actual volume.
+      if (typeof usage.cache_creation_input_tokens === 'number') {
+        inputTokens += usage.cache_creation_input_tokens
+      }
+      if (typeof usage.cache_read_input_tokens === 'number') {
+        inputTokens += usage.cache_read_input_tokens
+      }
       if (typeof usage.input_tokens === 'number') inputTokens += usage.input_tokens
       if (typeof usage.output_tokens === 'number') outputTokens += usage.output_tokens
     }

@@ -11,6 +11,7 @@ import { ShellManager } from './shell-manager'
 import { resolveClaudePath } from './claude-path'
 import { shouldNotify } from './notify-policy'
 import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
+import { ptyEnv } from './clean-env'
 import { changedFiles, fileDiff, mergeBranch, pushAndCreatePr } from './git-review'
 import { sessionCost } from './transcript-cost'
 
@@ -114,7 +115,7 @@ app.whenReady().then(async () => {
         cols: opts.cols,
         rows: opts.rows,
         cwd: opts.cwd,
-        env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>
+        env: ptyEnv(process.env)
       })
       return adapt(proc)
     }
@@ -134,7 +135,7 @@ app.whenReady().then(async () => {
             cols: 80,
             rows: 24,
             cwd,
-            env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>
+            env: ptyEnv(process.env)
           })
         )
     })
