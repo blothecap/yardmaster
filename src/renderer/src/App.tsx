@@ -140,7 +140,11 @@ export default function App(): React.JSX.Element {
       </main>
       {dialogOpen && (
         <NewSessionDialog
-          recentDirs={[...new Set(sessions.map((s) => s.cwd))]}
+          recentDirs={[...new Set(
+            [...sessions]
+              .sort((a, b) => (b.lastActivityAt ?? b.statusChangedAt) - (a.lastActivityAt ?? a.statusChangedAt))
+              .map((s) => s.cwd)
+          )]}
           home={home}
           onCreate={async (name, cwd) => {
             const view = await window.api.create(name, cwd)
