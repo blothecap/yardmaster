@@ -33,7 +33,15 @@ export default function App(): React.JSX.Element {
       setSessions(init.sessions)
       if (init.sessions.length > 0) switchTo(init.sessions[0].id)
     })
-    window.api.onChanged(setSessions)
+    window.api.onChanged((views) => {
+      setSessions(views)
+      const current = activeIdRef.current
+      if (current && !views.some((s) => s.id === current)) {
+        const next = views[0]?.id ?? null
+        setActiveId(next)
+        window.api.setActive(next)
+      }
+    })
     window.api.onFocus((id) => switchTo(id))
     window.api.onShortcut((action) => handleShortcut(action))
     // eslint-disable-next-line react-hooks/exhaustive-deps
