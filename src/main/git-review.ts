@@ -1,10 +1,8 @@
 import { execFile } from 'node:child_process'
-import path from 'node:path'
+import type { ChangedFile } from '../shared/types'
+import { worktreePathFor } from './worktree'
 
-export interface ChangedFile {
-  path: string
-  status: string // A/M/D/R… from git diff --name-status, or '*' for uncommitted worktree changes
-}
+export type { ChangedFile }
 
 function git(cwd: string, ...args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -13,10 +11,6 @@ function git(cwd: string, ...args: string[]): Promise<string> {
       else resolve(stdout.trim())
     })
   })
-}
-
-function worktreePathFor(repoRoot: string, branch: string): string {
-  return path.join(repoRoot, '.worktrees', branch)
 }
 
 export async function changedFiles(

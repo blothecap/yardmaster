@@ -11,6 +11,7 @@ import { ShellManager } from './shell-manager'
 import { resolveClaudePath } from './claude-path'
 import { shouldNotify } from './notify-policy'
 import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
+import { changedFiles, fileDiff, mergeBranch } from './git-review'
 
 let win: BrowserWindow | null = null
 let manager: SessionManager | null = null
@@ -263,6 +264,57 @@ app.whenReady().then(async () => {
     ipcMain.handle('app:pickDirectory', async () => {
       const result = await dialog.showOpenDialog(win!, { properties: ['openDirectory', 'createDirectory'] })
       return result.canceled ? null : result.filePaths[0]
+    })
+    ipcMain.handle('review:files', async (_e, id: string) => {
+      const session = manager!.list().find((s) => s.id === id)
+      if (!session || !session.worktree) return { ok: false, error: 'not a worktree session' }
+      try {
+        const files = await changedFiles(
+          session.worktree.repoRoot,
+          session.worktree.branch,
+          session.worktree.baseBranch
+        )
+        return { ok: true, files }
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    })
+    ipcMain.handle('review:diff', async (_e, { id, file }: { id: string; file: string }) => {
+      const session = manager!.list().find((s) => s.id === id)
+      if (!session || !session.worktree) return { ok: false, error: 'not a worktree session' }
+      try {
+        const diff = await fileDiff(
+          session.cwd,
+          session.worktree.repoRoot,
+          session.worktree.branch,
+          session.worktree.baseBranch,
+          file
+        )
+        return { ok: true, diff }
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    })
+    ipcMain.handle('review:merge', async (_e, id: string) => {
+      const session = manager!.list().find((s) => s.id === id)
+      if (!session || !session.worktree) return { ok: false, error: 'not a worktree session' }
+      try {
+        const result = await mergeBranch(
+          session.worktree.repoRoot,
+          session.worktree.branch,
+          session.worktree.baseBranch
+        )
+        if (result.ok && win && !win.isDestroyed()) {
+          await dialog.showMessageBox(win, {
+            type: 'info',
+            message: `Merged ${session.worktree.branch} into ${session.worktree.baseBranch}.`,
+            detail: "The session and worktree still exist — remove the session when you're done."
+          })
+        }
+        return result
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
     })
 
     createWindow()

@@ -23,6 +23,11 @@ export interface SessionView extends SessionMeta {
   needsYouMessage: string | null
 }
 
+export interface ChangedFile {
+  path: string
+  status: string // A/M/D/R… from git diff --name-status, or '*' for uncommitted worktree changes
+}
+
 export type ShortcutAction =
   | { type: 'jump'; index: number } // Cmd+1..9 (index 0-based)
   | { type: 'next' } // Cmd+J / Cmd+Shift+]

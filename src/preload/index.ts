@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { SessionView, ShortcutAction } from '../shared/types'
+import type { ChangedFile, SessionView, ShortcutAction } from '../shared/types'
 
 export interface InitState {
   claudeFound: boolean
@@ -23,6 +23,15 @@ const api = {
   resize: (id: string, cols: number, rows: number): void =>
     ipcRenderer.send('sessions:resize', { id, cols, rows }),
   pickDirectory: (): Promise<string | null> => ipcRenderer.invoke('app:pickDirectory'),
+  reviewFiles: (id: string): Promise<{ ok: true; files: ChangedFile[] } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('review:files', id),
+  reviewDiff: (
+    id: string,
+    file: string
+  ): Promise<{ ok: true; diff: string } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('review:diff', { id, file }),
+  reviewMerge: (id: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke('review:merge', id),
   contextMenu: (id: string): void => ipcRenderer.send('sessions:contextMenu', id),
   shellEnsure: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:ensure', id),
   shellIsRunning: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:isRunning', id),

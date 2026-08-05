@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar'
 import TerminalPane from './components/TerminalPane'
 import ShellPane from './components/ShellPane'
 import NewSessionDialog from './components/NewSessionDialog'
+import ReviewPane from './components/ReviewPane'
 import { getTerminal } from './terminal-registry'
 
 export default function App(): React.JSX.Element {
@@ -19,6 +20,7 @@ export default function App(): React.JSX.Element {
   const [shellOpen, setShellOpen] = useState<Set<string>>(new Set())
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
   const [shellHeight, setShellHeight] = useState(35) // % of the terminal area
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   // Sidebar groups sessions sharing a directory (worktrees by repo root, plain by cwd);
   // shortcuts follow the same visible order
@@ -79,6 +81,9 @@ export default function App(): React.JSX.Element {
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
   }, [])
+
+  // Review pane holds no state across sessions — close it whenever the active session changes
+  useEffect(() => { setReviewOpen(false) }, [activeId])
 
   useEffect(() => {
     window.api.init().then((init) => {
@@ -153,6 +158,8 @@ export default function App(): React.JSX.Element {
     }
   }, [switchTo, toggleShell])
 
+  const activeSession = sessions.find((s) => s.id === activeId) ?? null
+
   if (!claudeFound) {
     return (
       <div className="app fullscreen-message">
@@ -202,6 +209,20 @@ export default function App(): React.JSX.Element {
           )}
           {sessions.length === 0 && (
             <div className="empty-state">No sessions yet — press ⌘N to create one.</div>
+          )}
+          {activeSession?.worktree && !reviewOpen && (
+            <button className="changes-btn" onClick={() => setReviewOpen(true)}>
+              Changes
+            </button>
+          )}
+          {activeSession?.worktree && reviewOpen && (
+            <ReviewPane
+              key={activeSession.id}
+              sessionId={activeSession.id}
+              branch={activeSession.worktree.branch}
+              baseBranch={activeSession.worktree.baseBranch}
+              onClose={() => setReviewOpen(false)}
+            />
           )}
         </div>
         <div

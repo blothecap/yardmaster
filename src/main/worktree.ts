@@ -25,6 +25,10 @@ export async function detectRepoRoot(dir: string): Promise<string | null> {
   }
 }
 
+export function worktreePathFor(repoRoot: string, branch: string): string {
+  return path.join(repoRoot, '.worktrees', branch)
+}
+
 export function slugify(name: string): string {
   const slug = name
     .toLowerCase()
@@ -58,7 +62,7 @@ export async function createWorktree(repoRoot: string, sessionName: string): Pro
   let branch = base
   for (let i = 2; await branchExists(repoRoot, branch); i++) branch = `${base}-${i}`
   await ensureExcluded(repoRoot)
-  const wtPath = path.join(repoRoot, '.worktrees', branch)
+  const wtPath = worktreePathFor(repoRoot, branch)
   const currentBranch = await git(repoRoot, 'rev-parse', '--abbrev-ref', 'HEAD')
   const baseBranch = currentBranch === 'HEAD' ? 'main' : currentBranch
   await git(repoRoot, 'worktree', 'add', wtPath, '-b', branch)
