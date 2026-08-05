@@ -219,3 +219,41 @@ describe('reorder and rename', () => {
     expect(spy).toHaveBeenCalled()
   })
 })
+
+describe('late events after close/respawn', () => {
+  it('ignores status hooks for sessions with no live pty', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.close(v.id)
+    m.handleHookEvent(v.id, 'Stop', {})
+    expect(m.list()[0].status).toBe('exited')
+    m.handleHookEvent(v.id, 'Notification', {})
+    expect(m.list()[0].status).toBe('exited')
+  })
+
+  it('still records claudeSessionId from a late SessionStart', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.close(v.id)
+    m.handleHookEvent(v.id, 'SessionStart', { session_id: 'cs-late' })
+    expect(m.list()[0].claudeSessionId).toBe('cs-late')
+  })
+
+  it('ignores stale pty callbacks after resume-fallback respawn', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp/proj')
+    m.handleHookEvent(v.id, 'SessionStart', { session_id: 'cs-old' })
+    m.close(v.id)
+    m.activate(v.id)
+    clock.t += 2000
+    spawns[1].pty.exitCb!({ exitCode: 1 }) // fallback respawns -> spawns[2]
+    expect(spawns).toHaveLength(3)
+    const chunks: string[] = []
+    m.on('data', (_id: string, c: string) => chunks.push(c))
+    spawns[1].pty.dataCb!('zombie output')
+    spawns[1].pty.exitCb!({ exitCode: 1 })
+    expect(chunks).toEqual([])
+    expect(m.list()[0].status).toBe('idle')
+    expect(spawns).toHaveLength(3)
+  })
+})

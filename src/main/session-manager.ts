@@ -163,7 +163,9 @@ export class SessionManager extends EventEmitter {
         this.persist()
         return
       }
-    } else if (event === 'UserPromptSubmit') {
+    }
+    if (!s.pty) return
+    if (event === 'UserPromptSubmit') {
       this.transition(s, 'working')
     } else if (event === 'Notification') {
       this.transition(s, 'needs-you')
@@ -182,15 +184,20 @@ export class SessionManager extends EventEmitter {
 
   private spawn(s: InternalSession, resumeId: string | null): void {
     const settingsPath = this.deps.writeSettings(s.meta.id)
-    s.pty = this.deps.spawner({ cwd: s.meta.cwd, settingsPath, resumeId })
+    const pty = this.deps.spawner({ cwd: s.meta.cwd, settingsPath, resumeId })
+    s.pty = pty
     s.spawnedAt = this.deps.now()
     s.spawnedWithResume = resumeId !== null
     s.closing = false
-    s.pty.onData((chunk) => {
+    pty.onData((chunk) => {
+      if (s.pty !== pty) return
       s.lastActivityAt = this.deps.now()
       this.emit('data', s.meta.id, chunk)
     })
-    s.pty.onExit(({ exitCode }) => this.handleExit(s, exitCode))
+    pty.onExit(({ exitCode }) => {
+      if (s.pty !== pty) return
+      this.handleExit(s, exitCode)
+    })
   }
 
   private handleExit(s: InternalSession, exitCode: number): void {
