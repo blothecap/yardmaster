@@ -99,6 +99,12 @@ function runGh(args: string[], cwd: string): Promise<{ stdout: string; stderr: s
   })
 }
 
+export function extractPrUrl(stdout: string): string | null {
+  const lines = stdout.split('\n').map((l) => l.trim()).filter((l) => l !== '')
+  const urlLine = [...lines].reverse().find((l) => /^https:\/\//.test(l))
+  return urlLine ?? null
+}
+
 export async function pushAndCreatePr(
   worktreePath: string,
   branch: string,
@@ -112,9 +118,8 @@ export async function pushAndCreatePr(
       ['pr', 'create', '--head', branch, '--base', baseBranch, '--fill'],
       worktreePath
     )
-    const lines = stdout.split('\n').map((l) => l.trim()).filter((l) => l !== '')
-    const urlLine = [...lines].reverse().find((l) => /^https:/.test(l))
-    return { ok: true, url: urlLine ?? stdout.trim() }
+    const url = extractPrUrl(stdout)
+    return { ok: true, ...(url ? { url } : {}) }
   } catch (err) {
     const e = err as ExecFileException & { stdout?: string; stderr?: string }
     if (e.code === 'ENOENT') {

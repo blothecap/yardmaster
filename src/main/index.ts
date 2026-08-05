@@ -327,13 +327,19 @@ app.whenReady().then(async () => {
           session.worktree.branch,
           session.worktree.baseBranch
         )
-        if (result.ok && result.url) {
-          shell.openExternal(result.url)
-          if (win && !win.isDestroyed()) {
+        if (result.ok && win && !win.isDestroyed()) {
+          if (result.url && /^https:\/\//.test(result.url)) {
+            await shell.openExternal(result.url).catch(() => {})
             await dialog.showMessageBox(win, {
               type: 'info',
               message: 'Pull request created.',
               detail: result.url
+            })
+          } else {
+            await dialog.showMessageBox(win, {
+              type: 'info',
+              message: 'Pull request created.',
+              detail: "Couldn't parse the PR URL from gh's output — check GitHub."
             })
           }
         }

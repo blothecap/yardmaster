@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { createWorktree } from './worktree'
-import { changedFiles, fileDiff, mergeBranch, pushBranch } from './git-review'
+import { changedFiles, fileDiff, mergeBranch, pushBranch, extractPrUrl } from './git-review'
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
@@ -142,5 +142,21 @@ describe('pushBranch', () => {
     const result = await pushBranch(wt.path, wt.branch)
     expect(result.ok).toBe(false)
     expect(result.error).toMatch(/origin|remote/i)
+  })
+})
+
+describe('extractPrUrl', () => {
+  it('picks the last https line when gh prints several', () => {
+    const stdout = [
+      'Creating pull request for feature into main in some/repo',
+      '',
+      'https://example.com/not-the-pr',
+      'https://github.com/some/repo/pull/42'
+    ].join('\n')
+    expect(extractPrUrl(stdout)).toBe('https://github.com/some/repo/pull/42')
+  })
+
+  it('returns null when stdout has no https line', () => {
+    expect(extractPrUrl('no url here\njust some text\n')).toBeNull()
   })
 })
