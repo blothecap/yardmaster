@@ -12,6 +12,13 @@ Run through this before declaring a build good. Prereq: `claude` installed and l
 - [ ] Double-click rename works; drag reorder works; ⌘B toggles sidebar
 - [ ] ⌘↑/⌘↓ switch sessions (same as ⌘K/⌘J)
 - [ ] Right-click a row: Rename starts inline edit; Close appears for live sessions, Relaunch for exited; Remove… shows native confirm
+
+## Embedded shell (⌘T)
+- [ ] ⌘T opens a shell pane below the Claude pane, cd'd to the session's directory (`pwd` to confirm)
+- [ ] Shell keeps scrollback when hidden (⌘T ⌘T) and across session switches
+- [ ] Each session gets its own shell; switching sessions switches shells
+- [ ] `exit` in the shell shows the "shell exited" note; ⌘T (or click) restarts it
+- [ ] Closing/removing a session kills its shell
 - [ ] ⌘E jumps to the needs-you session
 
 ## Notifications

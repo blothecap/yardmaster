@@ -29,3 +29,4 @@ export type ShortcutAction =
   | { type: 'close' } // Cmd+W
   | { type: 'oldest-needs-you' } // Cmd+E
   | { type: 'toggle-sidebar' } // Cmd+B
+  | { type: 'toggle-shell' } // Cmd+T

@@ -7,11 +7,13 @@ import { Store } from './store'
 import { writeSessionSettings } from './settings-gen'
 import { HookServer } from './hook-server'
 import { SessionManager, type SpawnOpts } from './session-manager'
+import { ShellManager } from './shell-manager'
 import { resolveClaudePath } from './claude-path'
 import { shouldNotify } from './notify-policy'
 
 let win: BrowserWindow | null = null
 let manager: SessionManager | null = null
+let shellManager: ShellManager | null = null
 
 function createWindow(): void {
   win = new BrowserWindow({
@@ -57,6 +59,7 @@ function buildMenu(): void {
         { label: 'New Session', accelerator: 'Cmd+N', click: () => sendShortcut({ type: 'new' }) },
         { label: 'Rename Session', accelerator: 'Cmd+R', click: () => sendShortcut({ type: 'rename' }) },
         { label: 'Close Session', accelerator: 'Cmd+W', click: () => sendShortcut({ type: 'close' }) },
+        { label: 'Toggle Shell', accelerator: 'Cmd+T', click: () => sendShortcut({ type: 'toggle-shell' }) },
         { type: 'separator' },
         ...jumpItems
       ]
@@ -119,6 +122,21 @@ app.whenReady().then(async () => {
       writeSettings: (appSessionId) => writeSessionSettings(settingsDir, port, appSessionId)
     })
 
+    shellManager = new ShellManager({
+      spawner: (cwd) =>
+        adapt(
+          pty.spawn(process.env.SHELL ?? '/bin/zsh', ['-l'], {
+            name: 'xterm-256color',
+            cols: 80,
+            rows: 24,
+            cwd,
+            env: { ...process.env, TERM: 'xterm-256color' } as Record<string, string>
+          })
+        )
+    })
+    shellManager.on('data', (id, chunk) => safeSend('shell:data', { id, data: chunk }))
+    shellManager.on('exit', (id) => safeSend('shell:exit', id))
+
     hookServer.onEvent((id, event, payload) => manager!.handleHookEvent(id, event, payload))
 
     manager.on('changed', (views) => {
@@ -158,8 +176,23 @@ app.whenReady().then(async () => {
     ipcMain.handle('sessions:activate', (_e, id) => manager!.activate(id))
     ipcMain.handle('sessions:setActive', (_e, id) => manager!.setActive(id))
     ipcMain.handle('sessions:rename', (_e, { id, name }) => manager!.rename(id, name))
-    ipcMain.handle('sessions:close', (_e, id) => manager!.close(id))
-    ipcMain.handle('sessions:remove', (_e, id) => manager!.remove(id))
+    ipcMain.handle('sessions:close', (_e, id) => {
+      shellManager!.kill(id)
+      manager!.close(id)
+    })
+    ipcMain.handle('sessions:remove', (_e, id) => {
+      shellManager!.kill(id)
+      manager!.remove(id)
+    })
+    ipcMain.handle('shell:ensure', (_e, id: string) => {
+      const session = manager!.list().find((s) => s.id === id)
+      if (!session) return false
+      shellManager!.ensure(id, session.cwd)
+      return true
+    })
+    ipcMain.handle('shell:isRunning', (_e, id: string) => shellManager!.isRunning(id))
+    ipcMain.on('shell:input', (_e, { id, data }) => shellManager!.write(id, data))
+    ipcMain.on('shell:resize', (_e, { id, cols, rows }) => shellManager!.resize(id, cols, rows))
     ipcMain.handle('sessions:reorder', (_e, ids) => manager!.reorder(ids))
     ipcMain.on('sessions:contextMenu', (_e, id: string) => {
       const session = manager!.list().find((s) => s.id === id)
@@ -203,5 +236,8 @@ app.whenReady().then(async () => {
   }
 })
 
-app.on('before-quit', () => manager?.disposeAll())
+app.on('before-quit', () => {
+  shellManager?.disposeAll()
+  manager?.disposeAll()
+})
 app.on('window-all-closed', () => app.quit())

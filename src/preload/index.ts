@@ -23,6 +23,21 @@ const api = {
     ipcRenderer.send('sessions:resize', { id, cols, rows }),
   pickDirectory: (): Promise<string | null> => ipcRenderer.invoke('app:pickDirectory'),
   contextMenu: (id: string): void => ipcRenderer.send('sessions:contextMenu', id),
+  shellEnsure: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:ensure', id),
+  shellIsRunning: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:isRunning', id),
+  shellInput: (id: string, data: string): void => ipcRenderer.send('shell:input', { id, data }),
+  shellResize: (id: string, cols: number, rows: number): void =>
+    ipcRenderer.send('shell:resize', { id, cols, rows }),
+  onShellData: (cb: (id: string, data: string) => void): (() => void) => {
+    const h = (_e: Electron.IpcRendererEvent, p: { id: string; data: string }): void => cb(p.id, p.data)
+    ipcRenderer.on('shell:data', h)
+    return () => ipcRenderer.removeListener('shell:data', h)
+  },
+  onShellExit: (cb: (id: string) => void): (() => void) => {
+    const h = (_e: Electron.IpcRendererEvent, id: string): void => cb(id)
+    ipcRenderer.on('shell:exit', h)
+    return () => ipcRenderer.removeListener('shell:exit', h)
+  },
   onStartRename: (cb: (id: string) => void): (() => void) => {
     const h = (_e: Electron.IpcRendererEvent, id: string): void => cb(id)
     ipcRenderer.on('sessions:startRename', h)

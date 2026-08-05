@@ -4,23 +4,26 @@ import type { FitAddon } from '@xterm/addon-fit'
 import { createTerm } from '../xterm-factory'
 import { registerTerminal, unregisterTerminal } from '../terminal-registry'
 
-interface TerminalPaneProps {
+interface ShellPaneProps {
   sessionId: string
   visible: boolean
+  exited: boolean
+  onRestart(): void
 }
 
-export default function TerminalPane({ sessionId, visible }: TerminalPaneProps): React.JSX.Element {
+export default function ShellPane({ sessionId, visible, exited, onRestart }: ShellPaneProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const fitRef = useRef<FitAddon | null>(null)
   const termRef = useRef<Terminal | null>(null)
+  const registryKey = `shell:${sessionId}`
 
   useEffect(() => {
     const { term, fit } = createTerm()
     term.open(containerRef.current!)
     fit.fit()
-    term.onData((data) => window.api.input(sessionId, data))
-    term.onResize(({ cols, rows }) => window.api.resize(sessionId, cols, rows))
-    registerTerminal(sessionId, term)
+    term.onData((data) => window.api.shellInput(sessionId, data))
+    term.onResize(({ cols, rows }) => window.api.shellResize(sessionId, cols, rows))
+    registerTerminal(registryKey, term)
     termRef.current = term
     fitRef.current = fit
 
@@ -30,22 +33,26 @@ export default function TerminalPane({ sessionId, visible }: TerminalPaneProps):
     observer.observe(containerRef.current!)
     return () => {
       observer.disconnect()
-      unregisterTerminal(sessionId)
+      unregisterTerminal(registryKey)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId])
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !exited) {
       fitRef.current?.fit()
       termRef.current?.focus()
     }
-  }, [visible])
+  }, [visible, exited])
 
   return (
-    <div
-      ref={containerRef}
-      className="terminal-pane"
-      style={{ display: visible ? 'block' : 'none' }}
-    />
+    <div className="shell-pane" style={{ display: visible ? 'block' : 'none' }}>
+      <div ref={containerRef} className="shell-pane-term" />
+      {exited && (
+        <div className="shell-exited-note" onClick={onRestart}>
+          shell exited — ⌘T to restart
+        </div>
+      )}
+    </div>
   )
 }

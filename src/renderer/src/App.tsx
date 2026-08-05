@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SessionView, ShortcutAction } from '../../shared/types'
 import Sidebar from './components/Sidebar'
 import TerminalPane from './components/TerminalPane'
+import ShellPane from './components/ShellPane'
 import NewSessionDialog from './components/NewSessionDialog'
 import { getTerminal } from './terminal-registry'
 
@@ -15,18 +16,45 @@ export default function App(): React.JSX.Element {
   const [home, setHome] = useState('')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [shellOpen, setShellOpen] = useState<Set<string>>(new Set())
+  const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
+  const [shellExited, setShellExited] = useState<Set<string>>(new Set())
 
   // Refs mirror state that shortcut/event handlers need without re-subscribing
   const sessionsRef = useRef(sessions)
   sessionsRef.current = sessions
   const activeIdRef = useRef(activeId)
   activeIdRef.current = activeId
+  const shellOpenRef = useRef(shellOpen)
+  shellOpenRef.current = shellOpen
+  const shellExitedRef = useRef(shellExited)
+  shellExitedRef.current = shellExited
 
   const switchTo = useCallback((id: string) => {
     setActiveId(id)
     window.api.setActive(id)
     window.api.activate(id)
   }, [])
+
+  const restartShell = useCallback((id: string) => {
+    window.api.shellEnsure(id)
+    setShellExited((prev) => { const n = new Set(prev); n.delete(id); return n })
+  }, [])
+
+  const toggleShell = useCallback((id: string) => {
+    if (shellOpenRef.current.has(id)) {
+      if (shellExitedRef.current.has(id)) {
+        restartShell(id)
+      } else {
+        setShellOpen((prev) => { const n = new Set(prev); n.delete(id); return n })
+      }
+    } else {
+      window.api.shellEnsure(id)
+      setShellCreated((prev) => new Set(prev).add(id))
+      setShellExited((prev) => { const n = new Set(prev); n.delete(id); return n })
+      setShellOpen((prev) => new Set(prev).add(id))
+    }
+  }, [restartShell])
 
   useEffect(() => {
     window.api.init().then((init) => {
@@ -52,7 +80,9 @@ export default function App(): React.JSX.Element {
     const offShortcut = window.api.onShortcut((action) => handleShortcut(action))
     const offData = window.api.onData((id, data) => getTerminal(id)?.write(data))
     const offStartRename = window.api.onStartRename((id) => setRenamingId(id))
-    return () => { offChanged(); offFocus(); offShortcut(); offData(); offStartRename() }
+    const offShellData = window.api.onShellData((id, data) => getTerminal(`shell:${id}`)?.write(data))
+    const offShellExit = window.api.onShellExit((id) => setShellExited((prev) => new Set(prev).add(id)))
+    return () => { offChanged(); offFocus(); offShortcut(); offData(); offStartRename(); offShellData(); offShellExit() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -89,8 +119,11 @@ export default function App(): React.JSX.Element {
       case 'toggle-sidebar':
         setCollapsed((c) => !c)
         break
+      case 'toggle-shell':
+        if (current) toggleShell(current)
+        break
     }
-  }, [switchTo])
+  }, [switchTo, toggleShell])
 
   if (!claudeFound) {
     return (
@@ -129,18 +162,34 @@ export default function App(): React.JSX.Element {
             sessions.json was corrupt — a backup was saved to {corruptBackup}
           </div>
         )}
-        {sessions.map((s) => (
-          <TerminalPane key={s.id} sessionId={s.id} visible={s.id === activeId} />
-        ))}
-        {activeId && sessions.find((s) => s.id === activeId)?.status === 'exited' && (
-          <div className="exited-overlay">
-            <p>Session exited.</p>
-            <button onClick={() => window.api.activate(activeId)}>Relaunch</button>
-          </div>
-        )}
-        {sessions.length === 0 && (
-          <div className="empty-state">No sessions yet — press ⌘N to create one.</div>
-        )}
+        <div className="claude-pane-region">
+          {sessions.map((s) => (
+            <TerminalPane key={s.id} sessionId={s.id} visible={s.id === activeId} />
+          ))}
+          {activeId && sessions.find((s) => s.id === activeId)?.status === 'exited' && (
+            <div className="exited-overlay">
+              <p>Session exited.</p>
+              <button onClick={() => window.api.activate(activeId)}>Relaunch</button>
+            </div>
+          )}
+          {sessions.length === 0 && (
+            <div className="empty-state">No sessions yet — press ⌘N to create one.</div>
+          )}
+        </div>
+        <div
+          className="shell-split"
+          style={{ display: activeId && shellOpen.has(activeId) ? 'block' : 'none' }}
+        >
+          {sessions.filter((s) => shellCreated.has(s.id)).map((s) => (
+            <ShellPane
+              key={s.id}
+              sessionId={s.id}
+              visible={s.id === activeId && shellOpen.has(s.id)}
+              exited={shellExited.has(s.id)}
+              onRestart={() => restartShell(s.id)}
+            />
+          ))}
+        </div>
       </main>
       {dialogOpen && (
         <NewSessionDialog

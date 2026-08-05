@@ -148,6 +148,13 @@ with a confirmation.
   · subtle last-activity timestamp. Drag to reorder; double-click to rename.
 - Right-click on a row opens a native context menu (added post-v1): Rename,
   Close (live) or Relaunch (exited), and Remove… with a native confirm dialog.
+- Embedded shell (added post-v1): `Cmd+T` toggles a split pane (~35% height)
+  below the active Claude session running the user's login shell in that
+  session's cwd. One lazy shell per session; survives hidden-toggling and
+  session switches; killed with its session or app quit; no persistence. If
+  the shell exits, the pane shows a note and `Cmd+T`/click respawns it. This
+  narrows v1's "all shell work stays in the external terminal" stance to
+  "quick verify-loop shell work can happen in-app".
 - v1 styling minimal: one good monospace font, dark theme only.
 
 ### Keyboard shortcuts (hardcoded in v1)
@@ -157,6 +164,7 @@ with a confirmation.
 | `Cmd+1`…`Cmd+9`                         | Jump to session by sidebar position     |
 | `Cmd+J` / `Cmd+K`, `Cmd+Shift+]` / `[`  | Next / previous session                 |
 | `Cmd+↓` / `Cmd+↑`                       | Next / previous session (added post-v1) |
+| `Cmd+T`                                 | Toggle embedded shell pane (post-v1)    |
 | `Cmd+N`                                 | New session                             |
 | `Cmd+R`                                 | Rename current session                  |
 | `Cmd+W`                                 | Close current session                   |
