@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { SessionView } from '../../../shared/types'
 
 interface InboxProps {
@@ -9,6 +9,7 @@ interface InboxProps {
 
 export default function Inbox(props: InboxProps): React.JSX.Element {
   const { sessions, onJump, onClose } = props
+  const panelRef = useRef<HTMLDivElement>(null)
 
   const needy = useMemo(
     () =>
@@ -19,19 +20,19 @@ export default function Inbox(props: InboxProps): React.JSX.Element {
   )
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        onClose()
-      } else if (e.key === 'Enter') {
-        if (needy[0]) onJump(needy[0].id)
-      }
+    panelRef.current?.focus()
+  }, [])
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key === 'Escape') {
+      onClose()
+    } else if (e.key === 'Enter') {
+      if (needy[0]) onJump(needy[0].id)
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [needy, onJump, onClose])
+  }
 
   return (
-    <div className="inbox-panel">
+    <div className="inbox-panel" ref={panelRef} tabIndex={-1} onKeyDown={onKeyDown}>
       <div className="inbox-header">
         <span>Waiting on You</span>
         <button className="inbox-close" title="Close" onClick={onClose}>×</button>

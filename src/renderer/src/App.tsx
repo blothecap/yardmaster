@@ -57,6 +57,13 @@ export default function App(): React.JSX.Element {
     window.api.activate(id)
   }, [])
 
+  const jumpFromInbox = useCallback((id: string) => {
+    switchTo(id)
+    setInboxOpen(false)
+  }, [switchTo])
+
+  const closeInbox = useCallback(() => setInboxOpen(false), [])
+
   const toggleShell = useCallback((id: string) => {
     if (shellOpenRef.current.has(id)) {
       setShellOpen((prev) => { const n = new Set(prev); n.delete(id); return n })
@@ -198,8 +205,8 @@ export default function App(): React.JSX.Element {
         {inboxOpen && (
           <Inbox
             sessions={displaySessions}
-            onJump={(id) => { switchTo(id); setInboxOpen(false) }}
-            onClose={() => setInboxOpen(false)}
+            onJump={jumpFromInbox}
+            onClose={closeInbox}
           />
         )}
         <div className="claude-pane-region">

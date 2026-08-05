@@ -361,6 +361,7 @@ body {
   box-shadow: -4px 4px 16px rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
+.inbox-panel:focus { outline: none; }
 .inbox-header {
   display: flex;
   align-items: center;
