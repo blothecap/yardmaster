@@ -55,9 +55,13 @@ logged in, Node ≥ 23.11 (see `.nvmrc`), Xcode CLT (for the node-pty native bui
 
 ```sh
 nvm use                      # Node 23.11+ — older Node breaks Electron's installer
-npx -y npm@11 install        # npm 10.9 has an arborist bug on this tree; use npm 11
-npm run dev
+npx -y npm@11 install        # npm 10.9 has an arborist bug on this tree; use npm 1
+npm run dev                  # development
+npm run dist                 # build release/mac-arm64/Switchyard.app (unsigned, local use)
 ```
+
+To install: `cp -R release/mac-arm64/Switchyard.app /Applications/`. The app
+single-instance-locks, so close a dev instance before launching the packaged one.
 
 Quality gates: `npm test` (120+ Vitest tests — the state machine, git/worktree
 operations, and persistence are tested against real ptys-fakes and real temp git

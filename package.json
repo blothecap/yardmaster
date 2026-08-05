@@ -9,7 +9,9 @@
     "build": "electron-vite build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "postinstall": "electron-rebuild -f -w node-pty"
+    "postinstall": "electron-rebuild -f -w node-pty",
+    "dist": "electron-vite build && electron-builder --mac --dir",
+    "dist:dmg": "electron-vite build && electron-builder --mac dmg"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -28,7 +30,8 @@
     "electron-vite": "^5.0.0",
     "typescript": "^5.9.0",
     "vite": "^7.0.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "electron-builder": "^26.15.0"
   },
   "allowScripts": {
     "esbuild@0.25.12": true,
@@ -36,8 +39,28 @@
     "node-pty@1.1.0": true,
     "electron@43.3.0": true,
     "@electron/rebuild@4.2.0": true,
-    "fsevents@2.3.3": true
+    "fsevents@2.3.3": true,
+    "electron-winstaller@5.4.0": true
   },
   "productName": "Switchyard",
-  "description": "Switchyard \u2014 a cockpit for running and managing multiple Claude Code sessions"
+  "description": "Switchyard — a cockpit for running and managing multiple Claude Code sessions",
+  "build": {
+    "appId": "com.blothecap.switchyard",
+    "productName": "Switchyard",
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
+      "identity": null
+    },
+    "npmRebuild": true
+  }
 }

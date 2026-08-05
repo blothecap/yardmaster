@@ -103,6 +103,19 @@ function buildMenu(): void {
 
 app.setName('switchyard')
 
+// Two instances would fight over sessions.json and spawn duplicate ptys.
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.show()
+      win.focus()
+    }
+  })
+}
+
 /**
  * The app was previously named claude-terminal; carry existing sessions and
  * per-session settings over to the new identity's userData dir once.
