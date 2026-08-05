@@ -208,8 +208,13 @@ export class SessionManager extends EventEmitter {
       s.lastPrompt = truncatedString(payload.prompt, PROMPT_MAX_LEN)
       this.transition(s, 'working')
     } else if (event === 'Notification') {
-      s.pendingMessage = truncatedString(payload.message, MESSAGE_MAX_LEN)
-      this.transition(s, 'needs-you')
+      // Permission prompts arrive while Claude is working. A Notification on an
+      // idle session is Claude's periodic "waiting for your input" reminder —
+      // not actionable, so it must not paint the session red.
+      if (s.status === 'working' || s.status === 'needs-you') {
+        s.pendingMessage = truncatedString(payload.message, MESSAGE_MAX_LEN)
+        this.transition(s, 'needs-you')
+      }
     } else if (event === 'Stop') {
       this.transition(s, 'idle')
     }

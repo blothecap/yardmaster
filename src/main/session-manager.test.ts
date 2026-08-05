@@ -116,13 +116,31 @@ describe('activity and needs-you messages', () => {
     expect(m.list()[0].activity).toBe(long.slice(0, 120))
   })
 
-  it('Notification captures message as needsYouMessage while needs-you, truncated to 200 chars', () => {
+  it('Notification during working captures message as needsYouMessage, truncated to 200 chars', () => {
     const m = makeManager()
     const v = m.create('a', '/tmp')
     const long = 'y'.repeat(250)
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
     m.handleHookEvent(v.id, 'Notification', { message: long })
     expect(m.list()[0].status).toBe('needs-you')
     expect(m.list()[0].needsYouMessage).toBe(long.slice(0, 200))
+  })
+
+  it('Notification on an idle session is ignored (Claude idle "waiting for input" reminder)', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'Notification', { message: 'Claude is waiting for your input' })
+    expect(m.list()[0].status).toBe('idle')
+    expect(m.list()[0].needsYouMessage).toBeNull()
+  })
+
+  it('Notification while already needs-you updates the message', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'Notification', { message: 'first' })
+    m.handleHookEvent(v.id, 'Notification', { message: 'second' })
+    expect(m.list()[0].needsYouMessage).toBe('second')
   })
 
   it('needsYouMessage is null when the session is not in needs-you', () => {
@@ -134,6 +152,7 @@ describe('activity and needs-you messages', () => {
   it('pendingMessage clears when Stop transitions the session out of needs-you', () => {
     const m = makeManager()
     const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
     m.handleHookEvent(v.id, 'Notification', { message: 'please confirm' })
     m.handleHookEvent(v.id, 'Stop', {})
     expect(m.list()[0].status).toBe('idle')
