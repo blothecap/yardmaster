@@ -27,6 +27,18 @@ function keyOf(s: SessionView): string {
   return s.worktree?.repoRoot ?? s.cwd
 }
 
+/** Last path segment; falls back to parent/name when another group shares the basename. */
+function projectName(key: string, allKeys: string[]): string {
+  const parts = key.split('/').filter(Boolean)
+  const base = parts[parts.length - 1] ?? key
+  const clash = allKeys.some((k) => {
+    if (k === key) return false
+    const p = k.split('/').filter(Boolean)
+    return p[p.length - 1] === base
+  })
+  return clash && parts.length >= 2 ? `${parts[parts.length - 2]}/${base}` : base
+}
+
 function relativeTime(ts: number | null): string {
   if (!ts) return ''
   const s = Math.floor((Date.now() - ts) / 1000)
@@ -111,7 +123,9 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
               onClick={() => toggleGroup(groupKey)}
             >
               <span className={`chevron${isCollapsed ? '' : ' open'}`}>▸</span>
-              <span className="group-name">{shortCwd(groupKey, props.home)}</span>
+              <span className="group-name">
+                {projectName(groupKey, [...new Set(props.sessions.map(keyOf))])}
+              </span>
               {isCollapsed && members.some((t) => t.status === 'needs-you') && (
                 <span className="dot dot-needs-you" />
               )}
