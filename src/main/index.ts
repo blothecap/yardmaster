@@ -92,8 +92,9 @@ app.whenReady().then(async () => {
     kill: () => proc.kill()
   })
   const spawner = (opts: SpawnOpts): ReturnType<typeof adapt> => {
+    if (!claudePath) throw new Error('claude binary not found — cannot spawn session')
     const args = ['--settings', opts.settingsPath, ...(opts.resumeId ? ['--resume', opts.resumeId] : [])]
-    const proc = pty.spawn(claudePath!, args, {
+    const proc = pty.spawn(claudePath, args, {
       name: 'xterm-256color',
       cols: 80,
       rows: 24,
