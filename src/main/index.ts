@@ -372,12 +372,15 @@ app.whenReady().then(async () => {
             commits
           }
         }
+        // uncommittedFiles/commitsSince must run at repoRoot: porcelain status paths are
+        // always repo-root-relative, but a session's cwd can be a nested subdirectory —
+        // running there would mismatch pathspecs against those paths in review:diff below.
         const repoRoot = await detectRepoRoot(session.cwd)
         if (!repoRoot) return { ok: false, error: 'not a git repository' }
         const [files, branch, commits] = await Promise.all([
-          uncommittedFiles(session.cwd),
+          uncommittedFiles(repoRoot),
           currentBranch(session.cwd),
-          session.startCommit ? commitsSince(session.cwd, session.startCommit) : Promise.resolve([])
+          session.startCommit ? commitsSince(repoRoot, session.startCommit) : Promise.resolve([])
         ])
         return { ok: true, mode: 'plain', branch, files, commits }
       } catch (err) {
@@ -388,15 +391,20 @@ app.whenReady().then(async () => {
       const session = manager!.list().find((s) => s.id === id)
       if (!session) return { ok: false, error: 'session not found' }
       try {
-        const diff = session.worktree
-          ? await fileDiff(
-              session.cwd,
-              session.worktree.repoRoot,
-              session.worktree.branch,
-              session.worktree.baseBranch,
-              file
-            )
-          : await uncommittedDiff(session.cwd, file)
+        let diff: string
+        if (session.worktree) {
+          diff = await fileDiff(
+            session.cwd,
+            session.worktree.repoRoot,
+            session.worktree.branch,
+            session.worktree.baseBranch,
+            file
+          )
+        } else {
+          const repoRoot = await detectRepoRoot(session.cwd)
+          if (!repoRoot) return { ok: false, error: 'not a git repository' }
+          diff = await uncommittedDiff(repoRoot, file)
+        }
         return { ok: true, diff }
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) }

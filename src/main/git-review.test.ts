@@ -12,6 +12,7 @@ import {
   extractPrUrl,
   uncommittedFiles,
   uncommittedDiff,
+  diffNoIndex,
   commitsSince,
   headCommit,
   currentBranch
@@ -180,10 +181,45 @@ describe('uncommittedFiles', () => {
     expect(files).toEqual([{ path: 'staged.txt', status: 'A' }])
   })
 
-  it('takes the destination path for a rename', async () => {
+  it('takes the destination path for a rename (parsed from -z, not " -> ")', async () => {
     git(repo, 'mv', 'a.txt', 'renamed.txt')
     const files = await uncommittedFiles(repo)
     expect(files).toEqual([{ path: 'renamed.txt', status: 'R' }])
+  })
+
+  it('correctly resumes parsing after a rename record when another change follows it', async () => {
+    git(repo, 'mv', 'a.txt', 'renamed.txt')
+    fs.writeFileSync(path.join(repo, 'new.txt'), 'x\n')
+    const files = await uncommittedFiles(repo)
+    expect(files).toEqual(
+      expect.arrayContaining([
+        { path: 'renamed.txt', status: 'R' },
+        { path: 'new.txt', status: '?' }
+      ])
+    )
+    expect(files).toHaveLength(2)
+  })
+
+  it('reports a filename containing a space unquoted (porcelain -z, not v1)', async () => {
+    fs.writeFileSync(path.join(repo, 'a new file.txt'), 'hi\n')
+    const files = await uncommittedFiles(repo)
+    expect(files).toEqual([{ path: 'a new file.txt', status: '?' }])
+  })
+
+  it('reports a filename containing " -> " without misparsing it as a rename arrow', async () => {
+    fs.writeFileSync(path.join(repo, 'weird -> name.txt'), 'hi\n')
+    const files = await uncommittedFiles(repo)
+    expect(files).toEqual([{ path: 'weird -> name.txt', status: '?' }])
+  })
+
+  it('lists and stays root-relative for a file changed in a subdirectory', async () => {
+    fs.mkdirSync(path.join(repo, 'sub'))
+    fs.writeFileSync(path.join(repo, 'sub', 'nested.txt'), 'one\n')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-m', 'add nested')
+    fs.writeFileSync(path.join(repo, 'sub', 'nested.txt'), 'one\ntwo\n')
+    const files = await uncommittedFiles(repo)
+    expect(files).toEqual([{ path: 'sub/nested.txt', status: 'M' }])
   })
 })
 
@@ -203,6 +239,40 @@ describe('uncommittedDiff', () => {
     fs.writeFileSync(path.join(repo, 'new.txt'), 'brand new\n')
     const diff = await uncommittedDiff(repo, 'new.txt')
     expect(diff).toContain('+brand new')
+  })
+
+  it('diffs a staged deletion (git rm) via HEAD, not --no-index', async () => {
+    git(repo, 'rm', 'a.txt')
+    const diff = await uncommittedDiff(repo, 'a.txt')
+    expect(diff).toContain('-hello')
+  })
+
+  it('diffs a file with a space in its name', async () => {
+    fs.writeFileSync(path.join(repo, 'a new file.txt'), 'hi\n')
+    const diff = await uncommittedDiff(repo, 'a new file.txt')
+    expect(diff).toContain('+hi')
+  })
+
+  it('diffs a file changed in a subdirectory when called with repoRoot as cwd', async () => {
+    fs.mkdirSync(path.join(repo, 'sub'))
+    fs.writeFileSync(path.join(repo, 'sub', 'nested.txt'), 'one\n')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-m', 'add nested')
+    fs.writeFileSync(path.join(repo, 'sub', 'nested.txt'), 'one\ntwo\n')
+    const diff = await uncommittedDiff(repo, 'sub/nested.txt')
+    expect(diff).toContain('+two')
+  })
+})
+
+describe('diffNoIndex', () => {
+  it('resolves with the diff for an existing untracked file (exit 1, non-empty stdout)', async () => {
+    fs.writeFileSync(path.join(repo, 'new.txt'), 'brand new\n')
+    const diff = await diffNoIndex(repo, 'new.txt')
+    expect(diff).toContain('+brand new')
+  })
+
+  it('rejects when the file does not exist on disk (exit 1, empty stdout is an error)', async () => {
+    await expect(diffNoIndex(repo, 'does-not-exist.txt')).rejects.toThrow()
   })
 })
 
@@ -224,6 +294,23 @@ describe('commitsSince', () => {
 
   it('returns an empty array for a bad/unknown start commit', async () => {
     expect(await commitsSince(repo, 'not-a-real-commit-sha')).toEqual([])
+  })
+
+  it('does not treat a startCommit beginning with "-" as an option', async () => {
+    // A persisted sha can't literally start with '-' (hex digits only), but a corrupt/
+    // truncated value might; it must be rejected as an unknown ref, never parsed as a flag.
+    expect(await commitsSince(repo, '-not-a-flag')).toEqual([])
+  })
+
+  it('caps the log at 50 commits', async () => {
+    for (let i = 0; i < 52; i++) {
+      fs.writeFileSync(path.join(repo, 'b.txt'), String(i))
+      git(repo, 'add', '.')
+      git(repo, 'commit', '-m', `commit ${i}`)
+    }
+    const start = git(repo, 'rev-list', '--max-parents=0', 'HEAD')
+    const commits = await commitsSince(repo, start)
+    expect(commits).toHaveLength(50)
   })
 })
 

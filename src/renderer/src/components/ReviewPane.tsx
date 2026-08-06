@@ -86,7 +86,15 @@ export default function ReviewPane({ sessionId, onClose }: ReviewPaneProps): Rea
             <button title="Close" onClick={onClose}>×</button>
           </div>
         </div>
-        <div className="right-pane-empty">{filesError}</div>
+        <div className="review-pane-body">
+          <div className="right-pane-empty">{filesError}</div>
+        </div>
+        <div className="review-pane-footer">
+          <button className="footer-danger" onClick={() => window.api.remove(sessionId)}>
+            Remove…
+          </button>
+          <div className="footer-spacer" />
+        </div>
       </div>
     )
   }
