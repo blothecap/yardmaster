@@ -27,8 +27,19 @@ const api = {
   resize: (id: string, cols: number, rows: number): void =>
     ipcRenderer.send('sessions:resize', { id, cols, rows }),
   pickDirectory: (): Promise<string | null> => ipcRenderer.invoke('app:pickDirectory'),
-  reviewFiles: (id: string): Promise<{ ok: true; files: ChangedFile[] } | { ok: false; error: string }> =>
-    ipcRenderer.invoke('review:files', id),
+  reviewFiles: (
+    id: string
+  ): Promise<
+    | {
+        ok: true
+        mode: 'worktree' | 'plain'
+        branch: string | null
+        baseBranch?: string
+        files: ChangedFile[]
+        commits: string[]
+      }
+    | { ok: false; error: string }
+  > => ipcRenderer.invoke('review:files', id),
   reviewDiff: (
     id: string,
     file: string

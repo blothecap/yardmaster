@@ -4,7 +4,18 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { createWorktree } from './worktree'
-import { changedFiles, fileDiff, mergeBranch, pushBranch, extractPrUrl } from './git-review'
+import {
+  changedFiles,
+  fileDiff,
+  mergeBranch,
+  pushBranch,
+  extractPrUrl,
+  uncommittedFiles,
+  uncommittedDiff,
+  commitsSince,
+  headCommit,
+  currentBranch
+} from './git-review'
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
@@ -142,6 +153,102 @@ describe('pushBranch', () => {
     const result = await pushBranch(wt.path, wt.branch)
     expect(result.ok).toBe(false)
     expect(result.error).toMatch(/origin|remote/i)
+  })
+})
+
+describe('uncommittedFiles', () => {
+  it('returns empty array on a clean repo', async () => {
+    expect(await uncommittedFiles(repo)).toEqual([])
+  })
+
+  it('reports a modified tracked file using the worktree status column', async () => {
+    fs.writeFileSync(path.join(repo, 'a.txt'), 'changed\n')
+    const files = await uncommittedFiles(repo)
+    expect(files).toEqual([{ path: 'a.txt', status: 'M' }])
+  })
+
+  it('reports an untracked file as ?', async () => {
+    fs.writeFileSync(path.join(repo, 'new.txt'), 'hi\n')
+    const files = await uncommittedFiles(repo)
+    expect(files).toEqual([{ path: 'new.txt', status: '?' }])
+  })
+
+  it('reports a staged-add file using the index status column', async () => {
+    fs.writeFileSync(path.join(repo, 'staged.txt'), 'hi\n')
+    git(repo, 'add', 'staged.txt')
+    const files = await uncommittedFiles(repo)
+    expect(files).toEqual([{ path: 'staged.txt', status: 'A' }])
+  })
+
+  it('takes the destination path for a rename', async () => {
+    git(repo, 'mv', 'a.txt', 'renamed.txt')
+    const files = await uncommittedFiles(repo)
+    expect(files).toEqual([{ path: 'renamed.txt', status: 'R' }])
+  })
+})
+
+describe('uncommittedDiff', () => {
+  it('returns the diff for a modified tracked file', async () => {
+    fs.writeFileSync(path.join(repo, 'a.txt'), 'hello\nworld\n')
+    const diff = await uncommittedDiff(repo, 'a.txt')
+    expect(diff).toContain('+world')
+  })
+
+  it('returns empty string for an unmodified tracked file', async () => {
+    const diff = await uncommittedDiff(repo, 'a.txt')
+    expect(diff).toBe('')
+  })
+
+  it('returns the diff for an untracked file via --no-index (exit code 1 tolerated)', async () => {
+    fs.writeFileSync(path.join(repo, 'new.txt'), 'brand new\n')
+    const diff = await uncommittedDiff(repo, 'new.txt')
+    expect(diff).toContain('+brand new')
+  })
+})
+
+describe('commitsSince', () => {
+  it('lists oneline commits after the given start commit', async () => {
+    const start = git(repo, 'rev-parse', 'HEAD')
+    fs.writeFileSync(path.join(repo, 'b.txt'), 'new\n')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-m', 'second commit')
+    const commits = await commitsSince(repo, start)
+    expect(commits).toHaveLength(1)
+    expect(commits[0]).toContain('second commit')
+  })
+
+  it('returns an empty array when there are no new commits', async () => {
+    const start = git(repo, 'rev-parse', 'HEAD')
+    expect(await commitsSince(repo, start)).toEqual([])
+  })
+
+  it('returns an empty array for a bad/unknown start commit', async () => {
+    expect(await commitsSince(repo, 'not-a-real-commit-sha')).toEqual([])
+  })
+})
+
+describe('headCommit', () => {
+  it('returns the current HEAD sha', async () => {
+    const expected = git(repo, 'rev-parse', 'HEAD')
+    expect(await headCommit(repo)).toBe(expected)
+  })
+
+  it('returns null when cwd is not a git repository', async () => {
+    const nonRepo = path.join(dir, 'not-a-repo')
+    fs.mkdirSync(nonRepo)
+    expect(await headCommit(nonRepo)).toBeNull()
+  })
+})
+
+describe('currentBranch', () => {
+  it('returns the checked-out branch name', async () => {
+    expect(await currentBranch(repo)).toBe('main')
+  })
+
+  it('returns null when cwd is not a git repository', async () => {
+    const nonRepo = path.join(dir, 'not-a-repo-2')
+    fs.mkdirSync(nonRepo)
+    expect(await currentBranch(nonRepo)).toBeNull()
   })
 })
 

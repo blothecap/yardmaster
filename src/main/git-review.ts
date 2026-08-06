@@ -34,6 +34,91 @@ export async function changedFiles(
   return files
 }
 
+/** Like git(), but preserves leading whitespace — porcelain status lines are column-sensitive. */
+function gitRaw(cwd: string, ...args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile('git', args, { cwd, timeout: 15000 }, (err, stdout, stderr) => {
+      if (err) reject(new Error(stderr.trim() || err.message))
+      else resolve(stdout.replace(/\n+$/, ''))
+    })
+  })
+}
+
+/** Uncommitted (working-tree + index) changes for a plain (non-worktree) session. */
+export async function uncommittedFiles(cwd: string): Promise<ChangedFile[]> {
+  const out = await gitRaw(cwd, 'status', '--porcelain')
+  if (out === '') return []
+  return out.split('\n').map((line) => {
+    const xy = line.slice(0, 2)
+    const rest = line.slice(3)
+    const filePath = rest.includes(' -> ') ? rest.split(' -> ')[1] : rest
+    const status = xy === '??' ? '?' : xy[1] !== ' ' ? xy[1] : xy[0]
+    return { path: filePath, status }
+  })
+}
+
+async function isTracked(cwd: string, file: string): Promise<boolean> {
+  try {
+    await git(cwd, 'ls-files', '--error-unmatch', '--', file)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** `git diff --no-index` exits 1 (not an error) whenever the two sides differ. */
+function diffNoIndex(cwd: string, file: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      'git',
+      ['diff', '--no-index', '--', '/dev/null', file],
+      { cwd, timeout: 15000 },
+      (err, stdout, stderr) => {
+        if (!err) { resolve(stdout.trim()); return }
+        if ((err as ExecFileException).code === 1) { resolve(stdout.trim()); return }
+        reject(new Error(stderr.trim() || err.message))
+      }
+    )
+  })
+}
+
+/** Diff of a file's uncommitted state for a plain (non-worktree) session. */
+export async function uncommittedDiff(cwd: string, file: string): Promise<string> {
+  if (await isTracked(cwd, file)) {
+    return git(cwd, 'diff', 'HEAD', '--', file)
+  }
+  return diffNoIndex(cwd, file)
+}
+
+/** Oneline commit log since (exclusive) `startCommit`; [] for any bad/unknown ref. */
+export async function commitsSince(cwd: string, startCommit: string): Promise<string[]> {
+  try {
+    const out = await git(cwd, 'log', '--oneline', `${startCommit}..HEAD`)
+    return out === '' ? [] : out.split('\n')
+  } catch {
+    return []
+  }
+}
+
+/** Current HEAD sha, or null when cwd isn't a git repo (or has no commits yet). */
+export async function headCommit(cwd: string): Promise<string | null> {
+  try {
+    return await git(cwd, 'rev-parse', 'HEAD')
+  } catch {
+    return null
+  }
+}
+
+/** Checked-out branch name, or null when cwd isn't a git repo. */
+export async function currentBranch(cwd: string): Promise<string | null> {
+  try {
+    const b = await git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD')
+    return b === 'HEAD' ? 'detached' : b
+  } catch {
+    return null
+  }
+}
+
 export async function fileDiff(
   worktreePath: string,
   repoRoot: string,

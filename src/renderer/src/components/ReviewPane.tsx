@@ -3,10 +3,10 @@ import type { ChangedFile } from '../../../shared/types'
 
 interface ReviewPaneProps {
   sessionId: string
-  branch: string
-  baseBranch: string
   onClose(): void
 }
+
+type ReviewMode = 'worktree' | 'plain'
 
 function diffLineClass(line: string): string {
   if (line.startsWith('+') && !line.startsWith('+++')) return 'diff-add'
@@ -14,9 +14,13 @@ function diffLineClass(line: string): string {
   return ''
 }
 
-export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: ReviewPaneProps): React.JSX.Element {
+export default function ReviewPane({ sessionId, onClose }: ReviewPaneProps): React.JSX.Element {
   const [files, setFiles] = useState<ChangedFile[] | null>(null)
   const [filesError, setFilesError] = useState<string | null>(null)
+  const [mode, setMode] = useState<ReviewMode | null>(null)
+  const [branch, setBranch] = useState<string | null>(null)
+  const [baseBranch, setBaseBranch] = useState<string | null>(null)
+  const [commits, setCommits] = useState<string[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [diff, setDiff] = useState<string | null>(null)
   const [diffError, setDiffError] = useState<string | null>(null)
@@ -30,8 +34,15 @@ export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: R
     setDiff(null)
     setDiffError(null)
     window.api.reviewFiles(sessionId).then((res) => {
-      if (res.ok) setFiles(res.files)
-      else setFilesError(res.error)
+      if (res.ok) {
+        setFiles(res.files)
+        setMode(res.mode)
+        setBranch(res.branch)
+        setBaseBranch(res.baseBranch ?? null)
+        setCommits(res.commits)
+      } else {
+        setFilesError(res.error)
+      }
     })
   }, [sessionId])
 
@@ -65,10 +76,32 @@ export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: R
     if (!result.ok) alert(`Push + PR failed: ${result.error}`)
   }
 
+  if (filesError) {
+    return (
+      <div className="review-pane">
+        <div className="review-pane-header">
+          <span className="review-pane-title">Changes</span>
+          <div className="review-pane-header-actions">
+            <button title="Refresh" onClick={loadFiles}>⟳</button>
+            <button title="Close" onClick={onClose}>×</button>
+          </div>
+        </div>
+        <div className="right-pane-empty">{filesError}</div>
+      </div>
+    )
+  }
+
+  const header =
+    mode === 'worktree'
+      ? `⎇ ${branch} → ${baseBranch}`
+      : mode === 'plain'
+        ? `⎇ ${branch ?? '?'} · uncommitted changes`
+        : ''
+
   return (
     <div className="review-pane">
       <div className="review-pane-header">
-        <span className="review-pane-title">{`⎇ ${branch} → ${baseBranch}`}</span>
+        <span className="review-pane-title">{header}</span>
         <div className="review-pane-header-actions">
           <button title="Refresh" onClick={loadFiles}>⟳</button>
           <button title="Close" onClick={onClose}>×</button>
@@ -76,12 +109,19 @@ export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: R
       </div>
       <div className="review-pane-body">
         <div className="review-pane-files">
-          {filesError && <div className="review-pane-error">{filesError}</div>}
-          {!filesError && files === null && <div className="review-pane-empty">Loading…</div>}
-          {!filesError && files !== null && files.length === 0 && (
+          {commits.length > 0 && (
+            <div className="review-pane-commits">
+              <div className="review-pane-commits-title">Commits this session</div>
+              {commits.map((c) => (
+                <div key={c} className="review-commit-row">{c}</div>
+              ))}
+            </div>
+          )}
+          {files === null && <div className="review-pane-empty">Loading…</div>}
+          {files !== null && files.length === 0 && (
             <div className="review-pane-empty">No changes</div>
           )}
-          {!filesError && files?.map((f) => (
+          {files?.map((f) => (
             <div
               key={f.path}
               className={['review-file-row', f.path === selected ? 'active' : ''].join(' ')}
@@ -116,20 +156,24 @@ export default function ReviewPane({ sessionId, branch, baseBranch, onClose }: R
           Remove…
         </button>
         <div className="footer-spacer" />
-        <button
-          className="footer-secondary"
-          onClick={handlePushPr}
-          disabled={pushing || merging || files?.length === 0}
-        >
-          {pushing ? 'Pushing…' : 'Push + PR'}
-        </button>
-        <button
-          className="footer-primary"
-          onClick={handleMerge}
-          disabled={merging || pushing || files?.length === 0}
-        >
-          {merging ? 'Merging…' : `Merge into ${baseBranch}`}
-        </button>
+        {mode === 'worktree' && (
+          <>
+            <button
+              className="footer-secondary"
+              onClick={handlePushPr}
+              disabled={pushing || merging || files?.length === 0}
+            >
+              {pushing ? 'Pushing…' : 'Push + PR'}
+            </button>
+            <button
+              className="footer-primary"
+              onClick={handleMerge}
+              disabled={merging || pushing || files?.length === 0}
+            >
+              {merging ? 'Merging…' : `Merge into ${baseBranch}`}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

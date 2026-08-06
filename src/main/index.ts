@@ -12,7 +12,17 @@ import { resolveClaudePath } from './claude-path'
 import { shouldNotify } from './notify-policy'
 import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
 import { ptyEnv } from './clean-env'
-import { changedFiles, fileDiff, mergeBranch, pushAndCreatePr } from './git-review'
+import {
+  changedFiles,
+  commitsSince,
+  currentBranch,
+  fileDiff,
+  headCommit,
+  mergeBranch,
+  pushAndCreatePr,
+  uncommittedDiff,
+  uncommittedFiles
+} from './git-review'
 import { sessionCost } from './transcript-cost'
 import { projectInfo } from './project-info'
 
@@ -240,7 +250,12 @@ app.whenReady().then(async () => {
       let ok = false
       try { ok = fs.statSync(cwd).isDirectory() } catch { ok = false }
       if (!ok) throw new Error(`not a directory: ${cwd}`)
-      if (!worktree) return manager!.create(name, cwd, null, cleanArgs)
+      if (!worktree) {
+        // Baseline for the plain-session Changes pane's "commits this session" list.
+        const plainRepoRoot = await detectRepoRoot(cwd)
+        const startCommit = plainRepoRoot ? await headCommit(cwd) : null
+        return manager!.create(name, cwd, null, cleanArgs, startCommit)
+      }
       const repoRoot = await detectRepoRoot(cwd)
       if (!repoRoot) throw new Error(`not a git repository: ${cwd}`)
       const wt = await createWorktree(repoRoot, name)
@@ -341,29 +356,47 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle('review:files', async (_e, id: string) => {
       const session = manager!.list().find((s) => s.id === id)
-      if (!session || !session.worktree) return { ok: false, error: 'not a worktree session' }
+      if (!session) return { ok: false, error: 'session not found' }
       try {
-        const files = await changedFiles(
-          session.worktree.repoRoot,
-          session.worktree.branch,
-          session.worktree.baseBranch
-        )
-        return { ok: true, files }
+        if (session.worktree) {
+          const [files, commits] = await Promise.all([
+            changedFiles(session.worktree.repoRoot, session.worktree.branch, session.worktree.baseBranch),
+            commitsSince(session.cwd, session.worktree.baseBranch)
+          ])
+          return {
+            ok: true,
+            mode: 'worktree',
+            branch: session.worktree.branch,
+            baseBranch: session.worktree.baseBranch,
+            files,
+            commits
+          }
+        }
+        const repoRoot = await detectRepoRoot(session.cwd)
+        if (!repoRoot) return { ok: false, error: 'not a git repository' }
+        const [files, branch, commits] = await Promise.all([
+          uncommittedFiles(session.cwd),
+          currentBranch(session.cwd),
+          session.startCommit ? commitsSince(session.cwd, session.startCommit) : Promise.resolve([])
+        ])
+        return { ok: true, mode: 'plain', branch, files, commits }
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) }
       }
     })
     ipcMain.handle('review:diff', async (_e, { id, file }: { id: string; file: string }) => {
       const session = manager!.list().find((s) => s.id === id)
-      if (!session || !session.worktree) return { ok: false, error: 'not a worktree session' }
+      if (!session) return { ok: false, error: 'session not found' }
       try {
-        const diff = await fileDiff(
-          session.cwd,
-          session.worktree.repoRoot,
-          session.worktree.branch,
-          session.worktree.baseBranch,
-          file
-        )
+        const diff = session.worktree
+          ? await fileDiff(
+              session.cwd,
+              session.worktree.repoRoot,
+              session.worktree.branch,
+              session.worktree.baseBranch,
+              file
+            )
+          : await uncommittedDiff(session.cwd, file)
         return { ok: true, diff }
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) }
@@ -371,7 +404,9 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle('review:merge', async (_e, id: string) => {
       const session = manager!.list().find((s) => s.id === id)
-      if (!session || !session.worktree) return { ok: false, error: 'not a worktree session' }
+      if (!session || !session.worktree) {
+        return { ok: false, error: 'Merge is only available for worktree sessions.' }
+      }
       try {
         const result = await mergeBranch(
           session.worktree.repoRoot,
@@ -392,7 +427,9 @@ app.whenReady().then(async () => {
     })
     ipcMain.handle('review:pr', async (_e, id: string) => {
       const session = manager!.list().find((s) => s.id === id)
-      if (!session || !session.worktree) return { ok: false, error: 'not a worktree session' }
+      if (!session || !session.worktree) {
+        return { ok: false, error: 'Push + PR is only available for worktree sessions.' }
+      }
       try {
         const result = await pushAndCreatePr(
           session.cwd,

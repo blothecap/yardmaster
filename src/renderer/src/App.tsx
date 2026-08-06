@@ -260,20 +260,15 @@ export default function App(): React.JSX.Element {
           {rightPane === 'inbox' && (
             <Inbox sessions={displaySessions} onJump={jumpFromInbox} onClose={closeRightPane} />
           )}
-          {rightPane === 'changes' && activeSession?.worktree && (
+          {rightPane === 'changes' && activeSession && (
             <ReviewPane
               key={activeSession.id}
               sessionId={activeSession.id}
-              branch={activeSession.worktree.branch}
-              baseBranch={activeSession.worktree.baseBranch}
               onClose={closeRightPane}
             />
           )}
-          {rightPane === 'changes' && !activeSession?.worktree && (
-            <div className="right-pane-empty">
-              The active session isn't a worktree session. Changes shows a worktree's diff
-              against its base branch.
-            </div>
+          {rightPane === 'changes' && !activeSession && (
+            <div className="right-pane-empty">No active session.</div>
           )}
           {rightPane === 'shell' && (
             <div className="shell-view">
@@ -329,8 +324,8 @@ export default function App(): React.JSX.Element {
         </button>
         <button
           className={`strip-btn${rightPane === 'changes' ? ' active' : ''}`}
-          title={activeSession?.worktree ? 'Changes — worktree diff & merge' : 'Changes (worktree sessions only)'}
-          disabled={!activeSession?.worktree}
+          title="Changes — diffs & session commits"
+          disabled={!activeSession}
           onClick={() => setRightPane((p) => (p === 'changes' ? null : 'changes'))}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

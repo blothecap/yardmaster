@@ -23,6 +23,8 @@ export interface SessionMeta {
   lastActivityAt?: number | null
   /** True if the session had a live pty at last quit; one-shot, cleared after being surfaced. */
   wasRunning?: boolean
+  /** HEAD sha at session creation, for plain (non-worktree) sessions — baseline for commitsSince. */
+  startCommit?: string | null
 }
 
 export interface TranscriptCost {

@@ -89,7 +89,9 @@ export class SessionManager extends EventEmitter {
           // one-shot: surfaced above via resumableIds, then cleared so the next persist drops it
           wasRunning: undefined,
           // tolerate pre-worktree sessions.json entries, and pre-baseBranch worktree entries
-          worktree: meta.worktree ? { ...meta.worktree, baseBranch: meta.worktree.baseBranch ?? 'main' } : null
+          worktree: meta.worktree ? { ...meta.worktree, baseBranch: meta.worktree.baseBranch ?? 'main' } : null,
+          // tolerate pre-startCommit sessions.json entries
+          startCommit: meta.startCommit ?? null
         },
         status: 'exited',
         pty: null,
@@ -127,7 +129,8 @@ export class SessionManager extends EventEmitter {
     name: string,
     cwd: string,
     worktree: SessionMeta['worktree'] = null,
-    extraArgs: string | null = null
+    extraArgs: string | null = null,
+    startCommit: string | null = null
   ): SessionView {
     const order = Math.max(-1, ...[...this.sessions.values()].map((s) => s.meta.order)) + 1
     const meta: SessionMeta = {
@@ -137,7 +140,8 @@ export class SessionManager extends EventEmitter {
       claudeSessionId: null,
       order,
       worktree,
-      extraArgs
+      extraArgs,
+      startCommit
     }
     const session: InternalSession = {
       meta,

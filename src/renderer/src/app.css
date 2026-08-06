@@ -593,6 +593,26 @@ body {
   overflow-y: auto;
   border-bottom: 1px solid var(--bg-active);
 }
+.review-pane-commits {
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--bg-active);
+}
+.review-pane-commits-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-dim);
+  margin-bottom: 4px;
+}
+.review-commit-row {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-dim);
+  padding: 2px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .review-file-row {
   display: flex;
   align-items: center;

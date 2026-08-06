@@ -531,6 +531,27 @@ describe('worktree metadata', () => {
   })
 })
 
+describe('startCommit', () => {
+  it('create stores and persists startCommit', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp/proj', null, null, 'abc123')
+    expect(v.startCommit).toBe('abc123')
+    expect(store.load().sessions[0].startCommit).toBe('abc123')
+  })
+
+  it('defaults to null when not provided', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    expect(v.startCommit).toBeNull()
+  })
+
+  it('normalizes a missing startCommit on pre-existing sessions.json entries to null', () => {
+    store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: null, order: 0, worktree: null } as never])
+    const m = makeManager()
+    expect(m.list()[0].startCommit).toBeNull()
+  })
+})
+
 describe('restore from store', () => {
   it('lists persisted sessions as exited without spawning', () => {
     store.save([{ id: 'x1', name: 'old', cwd: '/tmp', claudeSessionId: 'cs-1', order: 0, worktree: null }])
