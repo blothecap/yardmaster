@@ -45,15 +45,31 @@ interface InternalSession {
   lastSize: { cols: number; rows: number } | null
   lastPrompt: string | null
   pendingMessage: string | null
+  lastTool: string | null
   buffer: string
   cost: TranscriptCost | null
 }
 
 const PROMPT_MAX_LEN = 120
 const MESSAGE_MAX_LEN = 200
+const TOOL_DETAIL_MAX_LEN = 60
+const TOOL_DETAIL_KEYS = ['command', 'file_path', 'pattern', 'url']
 
 function truncatedString(value: unknown, maxLen: number): string | null {
   return typeof value === 'string' ? value.slice(0, maxLen) : null
+}
+
+/** Builds a "<tool_name>: <detail>" label from a PreToolUse payload; never throws. */
+function toolLabel(payload: Record<string, unknown>): string | null {
+  const toolName = payload.tool_name
+  if (typeof toolName !== 'string' || !toolName) return null
+  const input = payload.tool_input
+  const inputObj = input && typeof input === 'object' ? (input as Record<string, unknown>) : {}
+  for (const key of TOOL_DETAIL_KEYS) {
+    const detail = truncatedString(inputObj[key], TOOL_DETAIL_MAX_LEN)
+    if (detail !== null) return `${toolName}: ${detail}`
+  }
+  return toolName
 }
 
 export class SessionManager extends EventEmitter {
@@ -81,6 +97,7 @@ export class SessionManager extends EventEmitter {
         lastSize: null,
         lastPrompt: null,
         pendingMessage: null,
+        lastTool: null,
         buffer: '',
         cost: null
       })
@@ -97,7 +114,8 @@ export class SessionManager extends EventEmitter {
         statusChangedAt: s.statusChangedAt,
         activity: s.lastPrompt,
         needsYouMessage: s.status === 'needs-you' ? s.pendingMessage : null,
-        cost: s.cost
+        cost: s.cost,
+        currentTool: s.status === 'working' ? s.lastTool : null
       }))
   }
 
@@ -129,6 +147,7 @@ export class SessionManager extends EventEmitter {
       lastSize: null,
       lastPrompt: null,
       pendingMessage: null,
+      lastTool: null,
       buffer: '',
       cost: null
     }
@@ -236,7 +255,12 @@ export class SessionManager extends EventEmitter {
     if (!s.pty) return
     if (event === 'UserPromptSubmit') {
       s.lastPrompt = truncatedString(payload.prompt, PROMPT_MAX_LEN)
+      s.lastTool = null // new turn — the previous tool label no longer applies
       this.transition(s, 'working')
+    } else if (event === 'PreToolUse') {
+      // Can fire in edge states (e.g. just after Stop); only updates the label,
+      // never the status — lastActivityAt above is already updated.
+      s.lastTool = toolLabel(payload)
     } else if (event === 'Notification') {
       // Permission prompts arrive while Claude is working. A Notification on an
       // idle session is Claude's periodic "waiting for your input" reminder —
@@ -246,6 +270,7 @@ export class SessionManager extends EventEmitter {
         this.transition(s, 'needs-you')
       }
     } else if (event === 'Stop') {
+      s.lastTool = null
       this.transition(s, 'idle')
     }
     this.emitChanged()
@@ -292,6 +317,7 @@ export class SessionManager extends EventEmitter {
   private handleExit(s: InternalSession, exitCode: number): void {
     const wasClosing = s.closing
     s.pty = null
+    s.lastTool = null
     const fastResumeFailure =
       !wasClosing &&
       s.spawnedWithResume &&

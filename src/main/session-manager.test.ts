@@ -190,6 +190,131 @@ describe('activity and needs-you messages', () => {
   })
 })
 
+describe('PreToolUse heartbeat', () => {
+  it('builds a label from tool_input.command while working', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls -la' } })
+    expect(m.list()[0].currentTool).toBe('Bash: ls -la')
+    expect(m.list()[0].status).toBe('working')
+  })
+
+  it('falls back to file_path, then pattern, then url when command is absent', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Read', tool_input: { file_path: '/a/b.ts' } })
+    expect(m.list()[0].currentTool).toBe('Read: /a/b.ts')
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Grep', tool_input: { pattern: 'TODO' } })
+    expect(m.list()[0].currentTool).toBe('Grep: TODO')
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'WebFetch', tool_input: { url: 'https://example.com' } })
+    expect(m.list()[0].currentTool).toBe('WebFetch: https://example.com')
+  })
+
+  it('prefers command over the other detail fields when several are present', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'PreToolUse', {
+      tool_name: 'Bash',
+      tool_input: { command: 'ls', file_path: '/a', pattern: 'x', url: 'http://x' }
+    })
+    expect(m.list()[0].currentTool).toBe('Bash: ls')
+  })
+
+  it('truncates the detail to 60 chars', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    const long = 'x'.repeat(100)
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: long } })
+    expect(m.list()[0].currentTool).toBe(`Bash: ${long.slice(0, 60)}`)
+  })
+
+  it('uses tool_name alone when no detail field is present', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'TodoWrite', tool_input: {} })
+    expect(m.list()[0].currentTool).toBe('TodoWrite')
+  })
+
+  it('currentTool is null unless the session is working, even if PreToolUse fired', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp') // idle, live pty
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
+    expect(m.list()[0].currentTool).toBeNull()
+  })
+
+  it('does not transition status, even in edge states', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp') // idle
+    const spy = vi.fn()
+    m.on('status-transition', spy)
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
+    expect(spy).not.toHaveBeenCalled()
+    expect(m.list()[0].status).toBe('idle')
+  })
+
+  it('emits changed for a live session', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    const spy = vi.fn()
+    m.on('changed', spy)
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
+    expect(spy).toHaveBeenCalled()
+  })
+
+  it('clears on Stop so it does not leak into the next turn', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
+    expect(m.list()[0].currentTool).toBe('Bash: ls')
+    m.handleHookEvent(v.id, 'Stop', {})
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    expect(m.list()[0].currentTool).toBeNull()
+  })
+
+  it('clears on UserPromptSubmit (new turn) even without an intervening Stop', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
+    expect(m.list()[0].currentTool).toBe('Bash: ls')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    expect(m.list()[0].currentTool).toBeNull()
+  })
+
+  it('clears on exit', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
+    expect(m.list()[0].currentTool).toBe('Bash: ls')
+    spawns[0].pty.exitCb!({ exitCode: 0 })
+    m.activate(v.id)
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    expect(m.list()[0].currentTool).toBeNull()
+  })
+
+  it('garbage payloads (non-string or absent fields) do not crash and never produce a broken label', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    expect(() => m.handleHookEvent(v.id, 'PreToolUse', {})).not.toThrow()
+    expect(m.list()[0].currentTool).toBeNull()
+    expect(() => m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 123 })).not.toThrow()
+    expect(m.list()[0].currentTool).toBeNull()
+    expect(() => m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: 'nope' })).not.toThrow()
+    expect(m.list()[0].currentTool).toBe('Bash')
+    expect(() => m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 42 } })).not.toThrow()
+    expect(m.list()[0].currentTool).toBe('Bash')
+  })
+})
+
 describe('write', () => {
   it('forwards keystrokes and flips to working on Enter', () => {
     const m = makeManager()
@@ -536,6 +661,20 @@ describe('late events after close/respawn', () => {
     expect(m.list()[0].status).toBe('exited')
     m.handleHookEvent(v.id, 'Notification', {})
     expect(m.list()[0].status).toBe('exited')
+  })
+
+  it('ignores PreToolUse for sessions with no live pty (no changed emission)', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.close(v.id)
+    const spy = vi.fn()
+    m.on('changed', spy)
+    expect(() =>
+      m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
+    ).not.toThrow()
+    expect(spy).not.toHaveBeenCalled()
+    expect(m.list()[0].status).toBe('exited')
+    expect(m.list()[0].currentTool).toBeNull()
   })
 
   it('still records claudeSessionId from a late SessionStart', () => {

@@ -8,7 +8,7 @@ import { HOOK_EVENTS } from '../shared/types'
 describe('buildHookSettings', () => {
   const settings = buildHookSettings(43210, 'app-uuid-1') as any
 
-  it('defines exactly our four hook events and nothing else', () => {
+  it('defines exactly our hook events and nothing else', () => {
     expect(Object.keys(settings)).toEqual(['hooks'])
     expect(Object.keys(settings.hooks).sort()).toEqual([...HOOK_EVENTS].sort())
   })

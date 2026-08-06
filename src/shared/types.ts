@@ -1,8 +1,14 @@
 export type SessionStatus = 'working' | 'needs-you' | 'idle' | 'exited'
 
-export type HookEvent = 'SessionStart' | 'UserPromptSubmit' | 'Notification' | 'Stop'
+export type HookEvent = 'SessionStart' | 'UserPromptSubmit' | 'PreToolUse' | 'Notification' | 'Stop'
 
-export const HOOK_EVENTS: HookEvent[] = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop']
+export const HOOK_EVENTS: HookEvent[] = [
+  'SessionStart',
+  'UserPromptSubmit',
+  'PreToolUse',
+  'Notification',
+  'Stop'
+]
 
 /** Persisted to sessions.json */
 export interface SessionMeta {
@@ -31,6 +37,7 @@ export interface SessionView extends SessionMeta {
   activity: string | null
   needsYouMessage: string | null
   cost: TranscriptCost | null
+  currentTool: string | null
 }
 
 export interface ChangedFile {
