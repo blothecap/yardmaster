@@ -35,6 +35,13 @@ function totalUsage(sessions: SessionView[]): string | null {
   return null
 }
 
+function workingDuration(statusChangedAt: number): string {
+  const mins = Math.floor((Date.now() - statusChangedAt) / 60000)
+  if (mins < 1) return '⚡<1m'
+  if (mins < 60) return `⚡${mins}m`
+  return `⚡${Math.floor(mins / 60)}h`
+}
+
 function costChip(cost: SessionView['cost']): { text: string; title: string } | null {
   if (!cost) return null
   const { costUsd, inputTokens, outputTokens } = cost
@@ -201,6 +208,13 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
                   <div className="session-cwd needs-line" title={s.needsYouMessage}>
                     {s.needsYouMessage}
                   </div>
+                ) : s.currentTool ? (
+                  <div
+                    className="session-cwd tool-line"
+                    title={s.worktree ? `⎇ ${s.worktree.branch} · ▸ ${s.currentTool}` : `▸ ${s.currentTool}`}
+                  >
+                    {s.worktree ? `⎇ ${s.worktree.branch} · ▸ ${s.currentTool}` : `▸ ${s.currentTool}`}
+                  </div>
                 ) : s.activity ? (
                   <div className="session-cwd" title={s.worktree ? `⎇ ${s.worktree.branch} · ${s.activity}` : s.activity}>
                     {s.worktree ? `⎇ ${s.worktree.branch} · ${s.activity}` : s.activity}
@@ -212,7 +226,9 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
                 ) : null}
               </div>
             )}
-            <span className="session-time">{relativeTime(s.lastActivityAt)}</span>
+            <span className={`session-time${s.status === 'working' ? ' working' : ''}`}>
+              {s.status === 'working' ? workingDuration(s.statusChangedAt) : relativeTime(s.lastActivityAt)}
+            </span>
             {chip && (
               <span className="session-cost" title={chip.title}>
                 {chip.text}

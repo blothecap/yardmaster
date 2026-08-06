@@ -160,6 +160,7 @@ body {
 .session-name { font-weight: 500; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-cwd { color: var(--fg-dim); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-time { color: var(--fg-dim); font-size: 9.5px; }
+.session-time.working { color: var(--status-working); }
 .session-cost { color: var(--fg-dim); font-size: 9.5px; margin-left: 4px; opacity: 0.75; }
 .session-row input {
   flex: 1;
@@ -242,6 +243,8 @@ body {
 .session-row.worktree { padding-left: 24px; }
 .session-row.worktree .session-cwd { color: var(--accent); opacity: 0.85; }
 .session-row .session-cwd.needs-line { color: var(--status-needs-you); opacity: 1; }
+.session-cwd.tool-line { font-family: var(--font-mono); color: var(--status-working); opacity: 1; }
+.session-row.worktree .session-cwd.tool-line { color: var(--status-working); opacity: 1; }
 .session-row.worktree .session-name::after {
   content: 'worktree';
   margin-left: 8px;
