@@ -308,6 +308,25 @@ body {
   color: #eb5757;
   padding: 6px 12px;
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.banner-neutral {
+  background: var(--bg-active);
+  color: var(--fg);
+}
+.banner-action {
+  background: transparent;
+  border: 1px solid var(--fg-dim);
+  color: var(--fg);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.banner-action:hover {
+  background: var(--bg-hover);
 }
 .empty-state, .fullscreen-message {
   display: flex;

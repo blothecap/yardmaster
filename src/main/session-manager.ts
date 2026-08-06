@@ -76,14 +76,18 @@ export class SessionManager extends EventEmitter {
   private sessions = new Map<string, InternalSession>()
   private deps: Required<SessionManagerDeps>
   private activeId: string | null = null
+  private resumableIds: string[] = []
 
   constructor(deps: SessionManagerDeps) {
     super()
     this.deps = { ...deps, now: deps.now ?? Date.now, deleteSettings: deps.deleteSettings ?? (() => {}) }
     for (const meta of this.deps.store.load().sessions) {
+      if (meta.wasRunning) this.resumableIds.push(meta.id)
       this.sessions.set(meta.id, {
         meta: {
           ...meta,
+          // one-shot: surfaced above via resumableIds, then cleared so the next persist drops it
+          wasRunning: undefined,
           // tolerate pre-worktree sessions.json entries, and pre-baseBranch worktree entries
           worktree: meta.worktree ? { ...meta.worktree, baseBranch: meta.worktree.baseBranch ?? 'main' } : null
         },
@@ -276,7 +280,16 @@ export class SessionManager extends EventEmitter {
     this.emitChanged()
   }
 
+  /** Ids of sessions that had a live pty when the app last quit; one-shot (see constructor). */
+  getResumableIds(): string[] {
+    return this.resumableIds
+  }
+
   disposeAll(): void {
+    for (const s of this.sessions.values()) {
+      s.meta.wasRunning = s.pty !== null
+    }
+    this.persist()
     for (const s of this.sessions.values()) {
       s.closing = true
       s.pty?.kill()

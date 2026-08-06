@@ -21,6 +21,8 @@ export interface SessionMeta {
   /** Extra CLI flags appended to the claude command, e.g. "--model opus" */
   extraArgs?: string | null
   lastActivityAt?: number | null
+  /** True if the session had a live pty at last quit; one-shot, cleared after being surfaced. */
+  wasRunning?: boolean
 }
 
 export interface TranscriptCost {

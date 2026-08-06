@@ -6,6 +6,7 @@ export interface InitState {
   corruptBackupPath: string | null
   home: string
   sessions: SessionView[]
+  resumableIds: string[]
 }
 
 const api = {

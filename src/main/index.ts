@@ -19,6 +19,8 @@ import { projectInfo } from './project-info'
 let win: BrowserWindow | null = null
 let manager: SessionManager | null = null
 let shellManager: ShellManager | null = null
+let quitConfirmed = false
+let askingQuit = false
 
 function createWindow(): void {
   win = new BrowserWindow({
@@ -230,7 +232,8 @@ app.whenReady().then(async () => {
       claudeFound: claudePath !== null,
       corruptBackupPath,
       home: app.getPath('home'),
-      sessions: manager!.list()
+      sessions: manager!.list(),
+      resumableIds: manager!.getResumableIds()
     }))
     ipcMain.handle('sessions:create', async (_e, { name, cwd, worktree, extraArgs }) => {
       const cleanArgs = typeof extraArgs === 'string' && extraArgs.trim() ? extraArgs.trim() : null
@@ -425,7 +428,36 @@ app.whenReady().then(async () => {
   }
 })
 
-app.on('before-quit', () => {
+// Losing in-flight work on quit is surprising; warn once and let the user bail out.
+// showMessageBox is async, so the guard re-enters before-quit on 'Quit Anyway' via
+// quitConfirmed — and askingQuit stops a re-fire while the dialog is still open.
+app.on('before-quit', (event) => {
+  if (!quitConfirmed) {
+    const working = manager?.list().filter((s) => s.status === 'working').length ?? 0
+    if (working > 0) {
+      event.preventDefault()
+      if (askingQuit) return
+      askingQuit = true
+      const opts: Electron.MessageBoxOptions = {
+        type: 'warning',
+        buttons: ['Quit Anyway', 'Cancel'],
+        defaultId: 1,
+        cancelId: 1,
+        message: `${working} session(s) are still working`,
+        detail: 'Quitting now interrupts their in-flight work, but the conversations themselves resume when you relaunch.'
+      }
+      const result = win && !win.isDestroyed() ? dialog.showMessageBox(win, opts) : dialog.showMessageBox(opts)
+      result.then((r) => {
+        askingQuit = false
+        if (r.response === 0) {
+          quitConfirmed = true
+          app.quit()
+        }
+      })
+      return
+    }
+  }
+  // Final, confirmed pass: persist wasRunning (still-live ptys) before killing them.
   shellManager?.disposeAll()
   manager?.disposeAll()
 })

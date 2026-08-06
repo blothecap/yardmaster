@@ -15,6 +15,7 @@ export default function App(): React.JSX.Element {
   const [collapsed, setCollapsed] = useState(false)
   const [claudeFound, setClaudeFound] = useState(true)
   const [corruptBackup, setCorruptBackup] = useState<string | null>(null)
+  const [resumableIds, setResumableIds] = useState<string[]>([])
   const [home, setHome] = useState('')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -110,6 +111,7 @@ export default function App(): React.JSX.Element {
       setCorruptBackup(init.corruptBackupPath)
       setHome(init.home)
       setSessions(init.sessions)
+      setResumableIds(init.resumableIds)
       if (init.sessions.length > 0) {
         setActiveId(init.sessions[0].id)
         window.api.setActive(init.sessions[0].id)
@@ -217,6 +219,24 @@ export default function App(): React.JSX.Element {
         {corruptBackup && (
           <div className="banner">
             sessions.json was corrupt — a backup was saved to {corruptBackup}
+          </div>
+        )}
+        {resumableIds.length > 0 && (
+          <div className="banner banner-neutral">
+            {resumableIds.length} session{resumableIds.length === 1 ? '' : 's'} were running when
+            Switchyard last quit
+            <button
+              className="banner-action"
+              onClick={() => {
+                resumableIds.forEach((id) => window.api.activate(id))
+                setResumableIds([])
+              }}
+            >
+              Resume all
+            </button>
+            <button className="banner-action" onClick={() => setResumableIds([])}>
+              Dismiss
+            </button>
           </div>
         )}
         <div className="claude-pane-region">

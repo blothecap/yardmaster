@@ -707,6 +707,51 @@ describe('late events after close/respawn', () => {
   })
 })
 
+describe('disposeAll and resume-on-launch', () => {
+  it('disposeAll persists wasRunning true only for live sessions, before killing ptys', () => {
+    const m = makeManager()
+    const a = m.create('a', '/tmp')
+    const b = m.create('b', '/tmp')
+    m.close(b.id) // b has no live pty; a still does
+    m.disposeAll()
+    const saved = store.load().sessions
+    const byId = new Map(saved.map((s) => [s.id, s]))
+    expect(byId.get(a.id)?.wasRunning).toBe(true)
+    expect(byId.get(b.id)?.wasRunning).toBe(false)
+    // killed as part of disposeAll
+    expect(spawns[0].pty.killed).toBe(true)
+  })
+
+  it('constructor surfaces resumableIds from wasRunning and clears the flag in-memory', () => {
+    const m = makeManager()
+    const a = m.create('a', '/tmp')
+    const b = m.create('b', '/tmp')
+    m.close(b.id)
+    m.disposeAll()
+
+    const m2 = makeManager()
+    expect(m2.getResumableIds()).toEqual([a.id])
+  })
+
+  it('second construction sees no resumableIds once a later persist writes the cleared flag', () => {
+    const m = makeManager()
+    const a = m.create('a', '/tmp')
+    m.disposeAll()
+
+    const m2 = makeManager()
+    expect(m2.getResumableIds()).toEqual([a.id])
+    m2.rename(a.id, 'a-renamed') // triggers a persist, flushing the in-memory clear to disk
+
+    const m3 = makeManager()
+    expect(m3.getResumableIds()).toEqual([])
+  })
+
+  it('getResumableIds is empty when nothing was running at last quit', () => {
+    const m = makeManager()
+    expect(m.getResumableIds()).toEqual([])
+  })
+})
+
 describe('setCost', () => {
   it('is null by default and round-trips a cost through list() plus a changed emission', () => {
     const m = makeManager()
