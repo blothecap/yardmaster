@@ -295,8 +295,11 @@ describe('PreToolUse heartbeat', () => {
     m.handleHookEvent(v.id, 'PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
     expect(m.list()[0].currentTool).toBe('Bash: ls')
     spawns[0].pty.exitCb!({ exitCode: 0 })
-    m.activate(v.id)
-    m.handleHookEvent(v.id, 'UserPromptSubmit', {})
+    m.activate(v.id) // respawn -> idle
+    // Reach 'working' via write(\r), not UserPromptSubmit/Stop — those clear lastTool
+    // themselves, which would mask a regression of handleExit's own clear.
+    m.write(v.id, '\r')
+    expect(m.list()[0].status).toBe('working')
     expect(m.list()[0].currentTool).toBeNull()
   })
 
