@@ -432,46 +432,30 @@ body {
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .terminal-area { display: flex; flex-direction: column; position: relative; }
 .claude-pane-region { flex: 1; position: relative; min-height: 0; }
-.shell-view { display: flex; flex-direction: column; height: 100%; }
-.shell-view-header {
+.view-tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--bg-active);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--fg-dim);
+  gap: 2px;
+  padding: 5px 8px 0;
+  border-bottom: 1px solid #050505;
+  background: var(--bg);
+  flex-shrink: 0;
 }
-.shell-view-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.shell-view-close {
+.view-tab {
   background: none;
   border: none;
+  border-radius: 5px 5px 0 0;
   color: var(--fg-dim);
-  font-size: 14px;
+  font-size: 11.5px;
+  padding: 4px 14px 5px;
   cursor: pointer;
 }
-.shell-view-close:hover { color: var(--fg); }
-.shell-view-body { flex: 1; position: relative; min-height: 0; }
-.shell-view-empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--fg-dim);
-  font-size: 12px;
-}
-.shell-open-btn {
-  background: var(--bg-hover);
+.view-tab:hover { color: var(--fg); }
+.view-tab.active {
+  background: var(--bg-active);
   color: var(--fg);
-  border: 1px solid var(--bg-active);
-  padding: 6px 14px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
+  font-weight: 500;
 }
-.shell-open-btn:hover { background: var(--bg-active); }
+
 .shell-pane { position: absolute; inset: 0; }
 .shell-pane-term { position: absolute; inset: 0; padding: 8px; }
 

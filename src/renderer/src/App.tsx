@@ -21,7 +21,8 @@ export default function App(): React.JSX.Element {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogPrefill, setDialogPrefill] = useState<{ dir: string; worktree: boolean } | null>(null)
   const [shellCreated, setShellCreated] = useState<Set<string>>(new Set())
-  const [rightPane, setRightPane] = useState<'inbox' | 'changes' | 'shell' | null>(null)
+  const [rightPane, setRightPane] = useState<'inbox' | 'changes' | null>(null)
+  const [shellView, setShellView] = useState<Set<string>>(new Set()) // sessions currently showing their shell tab
   const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('ct.sidebarWidth')) || 240)
   const [rightWidth, setRightWidth] = useState(() => Number(localStorage.getItem('ct.rightWidth')) || 380)
 
@@ -92,13 +93,15 @@ export default function App(): React.JSX.Element {
     setShellCreated((prev) => new Set(prev).add(id))
   }, [])
 
-  const toggleShellPane = useCallback(() => {
-    if (rightPaneRef.current === 'shell') {
-      setRightPane(null)
+  const shellViewRef = useRef(shellView)
+  shellViewRef.current = shellView
+
+  const toggleShellView = useCallback((id: string) => {
+    if (shellViewRef.current.has(id)) {
+      setShellView((prev) => { const n = new Set(prev); n.delete(id); return n })
     } else {
-      const current = activeIdRef.current
-      if (current) openShellFor(current)
-      setRightPane('shell')
+      openShellFor(id)
+      setShellView((prev) => new Set(prev).add(id))
     }
   }, [openShellFor])
 
@@ -132,8 +135,9 @@ export default function App(): React.JSX.Element {
     const offStartRename = window.api.onStartRename((id) => setRenamingId(id))
     const offShellData = window.api.onShellData((id, data) => getTerminal(`shell:${id}`)?.write(data))
     const offShellExit = window.api.onShellExit((id) => {
-      // shell ended (user typed exit, or its session closed) — the pane goes away
+      // shell ended (user typed exit, or its session closed) — flip back to Claude
       setShellCreated((prev) => { const n = new Set(prev); n.delete(id); return n })
+      setShellView((prev) => { const n = new Set(prev); n.delete(id); return n })
     })
     return () => { offChanged(); offFocus(); offShortcut(); offData(); offStartRename(); offShellData(); offShellExit() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -169,10 +173,10 @@ export default function App(): React.JSX.Element {
         setCollapsed((c) => !c)
         break
       case 'toggle-shell':
-        toggleShellPane()
+        if (current) toggleShellView(current)
         break
     }
-  }, [switchTo, toggleShellPane])
+  }, [switchTo, toggleShellView])
 
   const activeSession = sessions.find((s) => s.id === activeId) ?? null
   const needsYouCount = sessions.filter((s) => s.status === 'needs-you').length
@@ -239,11 +243,45 @@ export default function App(): React.JSX.Element {
             </button>
           </div>
         )}
+        {activeSession && (
+          <div className="view-tabs">
+            <button
+              className={`view-tab${!shellView.has(activeSession.id) ? ' active' : ''}`}
+              onClick={() => {
+                if (shellView.has(activeSession.id)) toggleShellView(activeSession.id)
+              }}
+            >
+              Claude
+            </button>
+            <button
+              className={`view-tab${shellView.has(activeSession.id) ? ' active' : ''}`}
+              title="Shell in this session's directory (⌘T)"
+              onClick={() => {
+                if (!shellView.has(activeSession.id)) toggleShellView(activeSession.id)
+              }}
+            >
+              Shell
+            </button>
+          </div>
+        )}
         <div className="claude-pane-region">
           {sessions.map((s) => (
-            <TerminalPane key={s.id} sessionId={s.id} visible={s.id === activeId} />
+            <TerminalPane
+              key={s.id}
+              sessionId={s.id}
+              visible={s.id === activeId && !shellView.has(s.id)}
+            />
           ))}
-          {activeId && sessions.find((s) => s.id === activeId)?.status === 'exited' && (
+          {sessions.filter((s) => shellCreated.has(s.id)).map((s) => (
+            <ShellPane
+              key={s.id}
+              sessionId={s.id}
+              visible={s.id === activeId && shellView.has(s.id)}
+            />
+          ))}
+          {activeId &&
+            !shellView.has(activeId) &&
+            sessions.find((s) => s.id === activeId)?.status === 'exited' && (
             <div className="exited-overlay">
               <p>Session exited.</p>
               <button onClick={() => window.api.activate(activeId)}>Relaunch</button>
@@ -270,32 +308,6 @@ export default function App(): React.JSX.Element {
           {rightPane === 'changes' && !activeSession && (
             <div className="right-pane-empty">No active session.</div>
           )}
-          {rightPane === 'shell' && (
-            <div className="shell-view">
-              <div className="shell-view-header">
-                <span className="shell-view-title">
-                  Shell{activeSession ? ` — ${activeSession.name}` : ''}
-                </span>
-                <button className="shell-view-close" onClick={closeRightPane}>×</button>
-              </div>
-              <div className="shell-view-body">
-                {sessions.filter((s) => shellCreated.has(s.id)).map((s) => (
-                  <ShellPane key={s.id} sessionId={s.id} visible={s.id === activeId} />
-                ))}
-                {activeSession && !shellCreated.has(activeSession.id) && (
-                  <div className="shell-view-empty">
-                    <button
-                      className="shell-open-btn"
-                      onClick={() => openShellFor(activeSession.id)}
-                    >
-                      Open shell in {activeSession.name}
-                    </button>
-                  </div>
-                )}
-                {!activeSession && <div className="shell-view-empty">No active session.</div>}
-              </div>
-            </div>
-          )}
         </aside>
       )}
       <nav className="activity-strip">
@@ -311,10 +323,10 @@ export default function App(): React.JSX.Element {
           {needsYouCount > 0 && <span className="strip-badge">{needsYouCount}</span>}
         </button>
         <button
-          className={`strip-btn${rightPane === 'shell' ? ' active' : ''}`}
+          className={`strip-btn${activeSession && shellView.has(activeSession.id) ? ' active' : ''}`}
           title="Shell in this session's directory (⌘T)"
           disabled={!activeSession}
-          onClick={toggleShellPane}
+          onClick={() => { if (activeSession) toggleShellView(activeSession.id) }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="4" width="20" height="16" rx="2" />
