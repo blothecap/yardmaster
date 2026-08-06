@@ -19,6 +19,7 @@ Run through this before declaring a build good. Prereq: `claude` installed and l
 - [ ] Creating with it checked: session runs in `<repo>/.worktrees/<branch>`; `git status` in the main repo stays clean
 - [ ] Two worktree sessions on the same repo appear grouped under the repo header with ⎇ branch labels
 - [ ] Both sessions can edit the same file without touching each other's copy
+- [ ] Changes works for PLAIN repo sessions too: uncommitted files (incl. names with spaces, staged deletes) diff correctly; "Commits this session" lists commits made since the session started; no Merge/PR buttons in plain mode
 - [ ] Removing (× or right-click) shows the 3-option dialog; "keep branch" leaves the branch in `git branch`; "delete" removes worktree + branch
 
 ## Embedded shell (⌘T / strip button)
@@ -28,6 +29,12 @@ Run through this before declaring a build good. Prereq: `claude` installed and l
 - [ ] `exit` in the shell returns the pane to the "Open shell" button; opening again spawns fresh
 - [ ] Closing/removing a session kills its shell
 - [ ] ⌘E jumps to the needs-you session
+
+## Heartbeat & lifecycle
+- [ ] While a session works, its row shows the live tool (▸ Bash: …) and an amber ⚡ working timer
+- [ ] Tool line clears when the response finishes; timer reverts to last-activity time
+- [ ] Quitting with a working session shows the "still working" confirm; Cancel leaves it running
+- [ ] After quitting with running sessions, next launch shows the "Resume all" banner; Resume all brings them back
 
 ## Notifications
 - [ ] Long task in A, switch to B → notification on A's completion; click focuses A
