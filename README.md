@@ -4,7 +4,7 @@
 
 <h1 align="center">Yardmaster</h1>
 
-<p align="center">A cockpit for running and managing multiple Claude Code sessions.<br/>
+<p align="center">The Claude-native terminal for macOS.<br/>
 Sessions as tracks, worktrees as sidings — and you, running the yard.</p>
 
 ---
