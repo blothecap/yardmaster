@@ -79,5 +79,6 @@ rm -rf /Applications/Yardmaster.app
 cp -R "release/mac-arm64/Yardmaster.app" /Applications/
 ok "Installed to /Applications/Yardmaster.app"
 
-open -a Yardmaster
+# open by path — LaunchServices hasn't indexed a first-time install by name yet
+open /Applications/Yardmaster.app
 bold "Done — Yardmaster is running. Pin it to your Dock and press ⌘N."
