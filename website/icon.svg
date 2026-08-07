@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Switchyard: a rail turnout — one line forking into three tracks,
+       each ending in a session-status dot (idle / working / needs-you). -->
+  <rect x="8" y="8" width="496" height="496" rx="112" fill="#0f0f0f"/>
+  <g stroke="#cfd4da" stroke-width="30" stroke-linecap="round" fill="none">
+    <path d="M256 440 V310"/>
+    <path d="M256 310 V168"/>
+    <path d="M256 310 C256 245 158 242 158 176"/>
+    <path d="M256 310 C256 245 354 242 354 176"/>
+  </g>
+  <circle cx="256" cy="122" r="27" fill="#d5a458"/>
+  <circle cx="158" cy="130" r="27" fill="#5cb176"/>
+  <circle cx="354" cy="130" r="27" fill="#eb5757"/>
+</svg>
