@@ -409,26 +409,6 @@ export default function App(): React.JSX.Element {
           {needsYouCount > 0 && <span className="strip-badge">{needsYouCount}</span>}
         </button>
         <button
-          className={`strip-btn${activeSession && (activeTab[activeSession.id] ?? 'claude') !== 'claude' ? ' active' : ''}`}
-          title="Terminal in this session's directory (⌘T for a new one)"
-          disabled={!activeSession}
-          onClick={() => {
-            if (!activeSession) return
-            const id = activeSession.id
-            const tabs = shellTabs[id] ?? []
-            const cur = activeTab[id] ?? 'claude'
-            if (cur !== 'claude') selectTab(id, 'claude')
-            else if (tabs.length) selectTab(id, tabs[tabs.length - 1])
-            else newShell(id)
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2" />
-            <path d="m7 9 3 3-3 3" />
-            <path d="M13 15h4" />
-          </svg>
-        </button>
-        <button
           className={`strip-btn${rightPane === 'changes' ? ' active' : ''}`}
           title="Changes — diffs & session commits"
           disabled={!activeSession}

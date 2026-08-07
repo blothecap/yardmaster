@@ -145,6 +145,9 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
         <span className="terminals-label">Terminals</span>
         {props.terminalCount > 0 && <span className="terminals-count">{props.terminalCount}</span>}
       </div>
+      <button className="new-session-cta" title="Start a Claude session (⌘N)" onClick={props.onNew}>
+        <span className="cta-plus">+</span> New Claude session
+      </button>
       <ul>
         {props.sessions.map((s, i) => {
           const prev = props.sessions[i - 1]
