@@ -99,8 +99,15 @@
   .mock-side { width: 232px; min-width: 232px; background: #141414; border-right: 1px solid #060606; padding: 10px 0; }
   .m-head { display:flex; align-items:center; gap: 7px; padding: 2px 12px 10px; color: var(--fg); font-weight: 600; font-size: 11px; letter-spacing: 0.1em; }
   .m-head img { width: 13px; height: 13px; border-radius: 3px; }
+  .m-terminals { display:flex; align-items:center; gap:6px; margin: 2px 8px 4px; padding: 5px 8px; border-radius: 4px; color: #9a9a9a; font-size: 10.5px; font-weight: 600; border-bottom: 1px solid var(--bg-raise); }
+  .m-terminals svg { width: 11px; height: 11px; }
+  .m-tcount { margin-left:auto; font-family: var(--mono); font-size: 8.5px; background: var(--bg-raise); border-radius: 7px; padding: 0 6px; }
+  .m-cta { margin: 0 8px 8px; padding: 5px 8px; border: 1px dashed var(--bg-active); border-radius: 5px; text-align: center; color: #9a9a9a; font-size: 10px; font-weight: 500; }
+  .m-det.usage { color: #6f6f6f; font-size: 8.5px; }
   .m-group { padding: 7px 12px 2px; color: #8f8f8f; font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em; }
-  .m-row { display: flex; align-items: center; gap: 7px; padding: 5px 10px 5px 24px; margin: 0 4px; border-radius: 4px; position: relative; }
+  .m-row { display: flex; align-items: flex-start; gap: 7px; padding: 5px 10px 5px 24px; margin: 0 4px; border-radius: 4px; position: relative; }
+  .m-row .dot { margin-top: 4px; }
+  .m-time { margin-top: 2px; }
   .m-row::before { content:''; position: absolute; left: 14px; top: 0; bottom: 0; width: 1px; background: var(--bg-active); }
   .m-row.on { background: var(--bg-active); }
   .m-row.on::before { background: var(--accent); }
@@ -112,7 +119,7 @@
   .m-det.need { color: var(--red); }
   .m-time { margin-left: auto; font-size: 9px; color: var(--fg-dim); }
   .m-time.work { color: var(--amber); }
-  .m-labels { flex: 1; min-width: 0; }
+  .m-labels { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   .wt { font-size: 8px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent); background: var(--bg-active); border-radius: 3px; padding: 1px 4px; margin-left: 6px; vertical-align: 1px; }
   .m-term { flex: 1; padding: 0; display: flex; flex-direction: column; background: var(--bg); }
   .m-tabs { display: flex; gap: 2px; padding: 5px 8px 0; border-bottom: 1px solid #060606; }
@@ -215,19 +222,24 @@
       <div class="mock-body">
         <div class="mock-side">
           <div class="m-head"><img src="icon.png" alt="" />YARDMASTER</div>
+          <div class="m-terminals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M13 15h4"/></svg>Terminals<span class="m-tcount">2</span></div>
+          <div class="m-cta">+ New Claude session</div>
           <div class="m-group">▾ CHECKOUT-SERVICE</div>
           <div class="m-row on">
             <span class="dot d-a"></span>
             <span class="m-labels">
               <span class="m-name">payment-flow</span>
+              <span class="m-det">⎇ main</span>
               <span class="m-det tool">▸ Bash: npm test</span>
+              <span class="m-det usage">1.2M tok</span>
             </span>
             <span class="m-time work">⚡4m</span>
           </div>
           <div class="m-row">
             <span class="dot d-r"></span>
             <span class="m-labels">
-              <span class="m-name">fix-webhooks<span class="wt">WORKTREE</span></span>
+              <span class="m-name">fix-webhooks<span class="wt">WT</span></span>
+              <span class="m-det">⎇ fix-webhooks</span>
               <span class="m-det need">Permission: run migrations?</span>
             </span>
             <span class="m-time">2m</span>
@@ -235,15 +247,16 @@
           <div class="m-row">
             <span class="dot d-g"></span>
             <span class="m-labels">
-              <span class="m-name">refactor-auth<span class="wt">WORKTREE</span></span>
+              <span class="m-name">refactor-auth<span class="wt">WT</span></span>
               <span class="m-det">⎇ refactor-auth · 3 ahead</span>
+              <span class="m-det usage">803k tok</span>
             </span>
             <span class="m-time">9m</span>
           </div>
           <div class="m-group">▸ DOCS-SITE <span style="float:right">2</span></div>
         </div>
         <div class="m-term">
-          <div class="m-tabs"><span class="m-tab on">Claude</span><span class="m-tab">Shell</span></div>
+          <div class="m-tabs"><span class="m-tab on">Claude</span><span class="m-tab">Terminal 1</span><span class="m-tab">Terminal 2</span><span class="m-tab">+</span></div>
           <div class="m-code">
 <div><span class="p">●</span> Running the payment test suite to verify the retry logic…</div>
 <div><span class="c">  Called <span class="h">Bash</span> — npm test -- --grep "retry"</span></div>
@@ -258,7 +271,6 @@
         </div>
         <div class="m-strip">
           <span class="s-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="s-badge">1</span></span>
-          <span class="s-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M13 15h4"/></svg></span>
           <span class="s-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9v3a3 3 0 0 0 3 3h3"/><path d="M18 15v-3a3 3 0 0 0-3-3h-3"/></svg></span>
         </div>
       </div>
@@ -288,15 +300,15 @@
       </div>
       <div class="card">
         <h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M13 15h4"/></svg>Still a real terminal</h3>
-        <p>Full xterm underneath: Claude Code's TUI renders perfectly, and a real login shell lives one <kbd>⌘T</kbd> away in every session's directory. Scrollback survives everything.</p>
+        <p>Full xterm underneath: Claude Code's TUI renders perfectly, and <kbd>⌘T</kbd> opens as many real login-shell tabs as you want beside every session. A standalone Terminals workspace means it works as a plain multi-tab terminal too — no Claude required.</p>
       </div>
       <div class="card">
         <h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M2 12h20"/></svg>Native sessions</h3>
-        <p>Sessions are the terminal's unit, not windows: named, grouped by project, persisted, resumed across restarts with their CLI flags intact. "Resume all" brings yesterday back in one click.</p>
+        <p>Sessions are the terminal's unit, not windows: named, grouped by project with the live git branch on every row, persisted, resumed across restarts with their CLI flags intact. "Resume all" brings yesterday back in one click.</p>
       </div>
       <div class="card">
         <h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Native cost</h3>
-        <p>Per-session token usage on every row, totals in the footer. Know which of your Claudes is eating the budget at a glance.</p>
+        <p>Per-session token usage on every row — <code>803k tok</code>, <code>1.2M tok</code> — with totals in the footer, surviving app restarts. Know which of your Claudes is eating the budget at a glance.</p>
       </div>
     </div>
   </section>
@@ -332,9 +344,10 @@
       <div class="key-row"><span>Jump to session</span><kbd>⌘1–9</kbd></div>
       <div class="key-row"><span>Next / previous</span><kbd>⌘J · ⌘K · ⌘↓ · ⌘↑</kbd></div>
       <div class="key-row"><span>Waiting-on-you inbox</span><kbd>⌘E</kbd></div>
-      <div class="key-row"><span>Claude ⇄ Shell tab</span><kbd>⌘T</kbd></div>
+      <div class="key-row"><span>New terminal tab</span><kbd>⌘T</kbd></div>
+      <div class="key-row"><span>Switch tabs</span><kbd>⌘⌥← · ⌘⌥→</kbd></div>
+      <div class="key-row"><span>Close terminal tab</span><kbd>⌘W</kbd></div>
       <div class="key-row"><span>Rename session</span><kbd>⌘R</kbd></div>
-      <div class="key-row"><span>Close session</span><kbd>⌘W</kbd></div>
       <div class="key-row"><span>Toggle sidebar</span><kbd>⌘B</kbd></div>
     </div>
   </section>
