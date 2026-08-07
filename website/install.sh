@@ -1,9 +1,8 @@
 #!/bin/bash
 # Yardmaster bootstrap — one-liner installer.
 #   curl -fsSL https://yard-master.vercel.app/install.sh | bash
-# Clones (or updates) the repo into ~/yardmaster using YOUR git credentials
-# (the repo is private — you need GitHub access to blothecap/yardmaster),
-# then hands off to the repo's full installer.
+# Clones (or updates) the repo into ~/yardmaster, then hands off to the
+# repo's full installer.
 set -euo pipefail
 
 REPO_URL="https://github.com/blothecap/yardmaster.git"
@@ -21,7 +20,7 @@ if [ -d "$DEST/.git" ]; then
 else
   bold "Cloning into $DEST…"
   git clone "$REPO_URL" "$DEST" \
-    || die "Clone failed. The repo is private — make sure your GitHub account has access (gh auth login, or a cached credential)."
+    || die "Clone failed — check your network connection and try again."
 fi
 
 cd "$DEST"

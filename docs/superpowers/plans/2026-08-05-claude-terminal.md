@@ -2116,7 +2116,7 @@ Append to `src/renderer/src/app.css`:
 
 - [ ] **Step 5: Verify manually with a temporary session**
 
-Run: `npm run dev`, then in devtools console: `await window.api.create('test', '/Users/siddharth/dev/cluade-terminal')` and click the session row.
+Run: `npm run dev`, then in devtools console: `await window.api.create('test', '/path/to/your/project')` and click the session row.
 Expected: Claude Code boots inside the pane, is fully interactive (arrow keys, Shift+Tab mode switch), resizes with the window, and after Claude finishes its first response the sidebar dot turns green (Stop hook). Typing a prompt + Enter turns it orange (working).
 
 - [ ] **Step 6: Commit**
