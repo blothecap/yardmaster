@@ -8,7 +8,7 @@ import { writeSessionSettings } from './settings-gen'
 import { HookServer } from './hook-server'
 import { SessionManager, type SpawnOpts } from './session-manager'
 import { ShellManager } from './shell-manager'
-import { resolveClaudePath } from './claude-path'
+import { resolveClaudePath, resolveLoginEnv } from './claude-path'
 import { shouldNotify } from './notify-policy'
 import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
 import { ptyEnv } from './clean-env'
@@ -159,6 +159,10 @@ app.whenReady().then(async () => {
     } catch { /* dev nicety only; packaged builds get the bundled .icns */ }
 
     const claudePath = await resolveClaudePath()
+    // Login-shell env so ptys see the user's real PATH (npm-installed claude
+    // needs `node` resolvable; Finder launches only get launchd's bare PATH).
+    const loginEnv = (await resolveLoginEnv()) ?? {}
+    const sessionEnv = (): Record<string, string> => ptyEnv({ ...process.env, ...loginEnv })
     const hookServer = new HookServer()
     const port = await hookServer.start()
     const userData = app.getPath('userData')
@@ -185,7 +189,7 @@ app.whenReady().then(async () => {
         cols: opts.cols,
         rows: opts.rows,
         cwd: opts.cwd,
-        env: ptyEnv(process.env)
+        env: sessionEnv()
       })
       return adapt(proc)
     }
@@ -205,7 +209,7 @@ app.whenReady().then(async () => {
             cols: 80,
             rows: 24,
             cwd,
-            env: ptyEnv(process.env)
+            env: sessionEnv()
           })
         )
     })
