@@ -336,12 +336,9 @@
     <h2>From source, in a minute.</h2>
     <p class="lede">macOS with Claude Code installed. Node 23+, then:</p>
     <div class="install">
-      <div><span class="c"># clone, build, install</span></div>
+      <div><span class="c"># one command — checks, builds, installs to /Applications</span></div>
       <div>git clone https://github.com/blothecap/yardmaster</div>
-      <div>cd yardmaster && nvm use</div>
-      <div>npx -y npm@11 install</div>
-      <div>npm run dist</div>
-      <div>cp -R release/mac-arm64/Yardmaster.app /Applications/</div>
+      <div>cd yardmaster && ./install.sh</div>
     </div>
   </section>
 

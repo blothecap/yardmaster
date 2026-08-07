@@ -55,14 +55,17 @@ Requirements: macOS, [Claude Code](https://claude.com/claude-code) installed and
 logged in, Node ≥ 23.11 (see `.nvmrc`), Xcode CLT (for the node-pty native build).
 
 ```sh
-nvm use                      # Node 23.11+ — older Node breaks Electron's installer
-npx -y npm@11 install        # npm 10.9 has an arborist bug on this tree; use npm 11
-npm run dev                  # development
-npm run dist                 # build release/mac-arm64/Yardmaster.app (unsigned, local use)
+git clone https://github.com/blothecap/yardmaster
+cd yardmaster && ./install.sh
 ```
 
-To install: `cp -R release/mac-arm64/Yardmaster.app /Applications/`. The app
-single-instance-locks, so close a dev instance before launching the packaged one.
+The installer checks prerequisites (Xcode CLT, Node ≥ 22.12 — auto-selected via
+nvm when available — and Claude Code), handles the npm 11 / native-module quirks,
+builds, and installs to /Applications. Re-run after `git pull` to update.
+
+For development: `nvm use && npx -y npm@11 install && npm run dev`
+(`npm run dist` builds the app bundle; the app single-instance-locks, so close a
+dev instance before launching the packaged one).
 
 Quality gates: `npm test` (120+ Vitest tests — the state machine, git/worktree
 operations, and persistence are tested against real ptys-fakes and real temp git
