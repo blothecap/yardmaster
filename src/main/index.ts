@@ -97,7 +97,7 @@ function buildMenu(): void {
       submenu: [
         { label: 'New Session', accelerator: 'Cmd+N', click: () => sendShortcut({ type: 'new' }) },
         { label: 'Rename Session', accelerator: 'Cmd+R', click: () => sendShortcut({ type: 'rename' }) },
-        { label: 'Close Session', accelerator: 'Cmd+W', click: () => sendShortcut({ type: 'close' }) },
+        { label: 'Close Terminal Tab', accelerator: 'Cmd+W', click: () => sendShortcut({ type: 'close' }) },
         { label: 'New Terminal Tab', accelerator: 'Cmd+T', click: () => sendShortcut({ type: 'new-shell' }) },
         { type: 'separator' },
         ...jumpItems

@@ -194,17 +194,20 @@ export default function App(): React.JSX.Element {
       case 'rename':
         if (current) setRenamingId(current)
         break
-      case 'close':
+      case 'close': {
+        // ⌘W only ever closes the terminal tab you're looking at — never the
+        // Claude tab or the session (close those from the sidebar / its ×).
+        if (!current) break
+        const tabs = shellTabsRef.current[current] ?? []
+        const cur = activeTabRef.current[current]
         if (current === TERMINALS_ID) {
-          // ⌘W in the Terminals view closes the tab you're looking at
-          const tabs = shellTabsRef.current[TERMINALS_ID] ?? []
-          const cur = activeTabRef.current[TERMINALS_ID]
           const target = tabs.includes(cur) ? cur : tabs[tabs.length - 1]
           if (target) window.api.shellKill(target)
-        } else if (current) {
-          window.api.close(current)
+        } else if (cur && cur !== 'claude' && tabs.includes(cur)) {
+          window.api.shellKill(cur)
         }
         break
+      }
       case 'toggle-inbox':
         setRightPane((p) => (p === 'inbox' ? null : 'inbox'))
         break
