@@ -15,10 +15,10 @@ bold "Yardmaster bootstrap"
 command -v git >/dev/null || die "git not found — install Xcode Command Line Tools first: xcode-select --install"
 
 if [ -d "$DEST/.git" ]; then
-  bold "Updating existing checkout at $DEST…"
+  bold "Updating existing checkout at ${DEST}…"
   git -C "$DEST" pull --ff-only
 else
-  bold "Cloning into $DEST…"
+  bold "Cloning into ${DEST}…"
   git clone "$REPO_URL" "$DEST" \
     || die "Clone failed — check your network connection and try again."
 fi
