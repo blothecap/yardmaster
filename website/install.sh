@@ -1,6 +1,6 @@
 #!/bin/bash
 # Yardmaster bootstrap — one-liner installer.
-#   curl -fsSL https://yardmaster-two.vercel.app/install.sh | bash
+#   curl -fsSL https://yard-master.vercel.app/install.sh | bash
 # Clones (or updates) the repo into ~/yardmaster using YOUR git credentials
 # (the repo is private — you need GitHub access to blothecap/yardmaster),
 # then hands off to the repo's full installer.
