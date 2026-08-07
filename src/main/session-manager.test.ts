@@ -805,3 +805,39 @@ describe('setCost', () => {
     ).not.toThrow()
   })
 })
+
+describe('setBranch', () => {
+  it('is null by default, shows through list(), and emits changed once per change', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    expect(v.branch).toBeNull()
+
+    const changes: unknown[] = []
+    m.on('changed', () => changes.push(1))
+    m.setBranch(v.id, 'main')
+    expect(m.list()[0].branch).toBe('main')
+    expect(changes).toHaveLength(1)
+
+    // same value → no re-emit
+    m.setBranch(v.id, 'main')
+    expect(changes).toHaveLength(1)
+  })
+
+  it('is ignored for worktree sessions, which report their worktree branch', () => {
+    const m = makeManager()
+    const wt = { repoRoot: '/repo', branch: 'feature-x', baseBranch: 'main' }
+    const v = m.create('w', '/repo/.worktrees/feature-x', wt)
+    expect(m.list()[0].branch).toBe('feature-x')
+
+    const changes: unknown[] = []
+    m.on('changed', () => changes.push(1))
+    m.setBranch(v.id, 'other')
+    expect(m.list()[0].branch).toBe('feature-x')
+    expect(changes).toHaveLength(0)
+  })
+
+  it('tolerates unknown session ids', () => {
+    const m = makeManager()
+    expect(() => m.setBranch('ghost', 'main')).not.toThrow()
+  })
+})

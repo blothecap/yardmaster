@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { SessionView } from '../../../shared/types'
 import type { ProjectInfo } from '../../../main/project-info'
-import { projectName, relativeTime, shortCwd, keyOf } from '../session-utils'
+import { formatTokens, projectName, relativeTime, shortCwd, keyOf } from '../session-utils'
 
 interface ProjectPanelProps {
   session: SessionView
@@ -12,7 +12,7 @@ function usageText(cost: SessionView['cost']): string | null {
   if (!cost) return null
   if (cost.costUsd !== null) return `$${cost.costUsd.toFixed(2)}`
   const total = cost.inputTokens + cost.outputTokens
-  return total > 0 ? `${Math.round(total / 1000)}k tok` : null
+  return total > 0 ? `${formatTokens(total)} tok` : null
 }
 
 export default function ProjectPanel({ session, home }: ProjectPanelProps): React.JSX.Element {

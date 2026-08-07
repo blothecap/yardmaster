@@ -144,24 +144,31 @@ body {
 .fleet-usage { font-size: 10.5px; color: var(--fg-dim); font-family: var(--font-mono); }
 .session-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 7px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   cursor: pointer;
   border-radius: 4px;
   margin: 0 4px;
 }
+.session-row > .dot { margin-top: 5px; }
+.session-row .remove-btn { margin-top: 1px; }
 .session-row:hover { background: var(--bg-hover); }
 .session-row.active { background: var(--bg-active); }
 .session-row.active .session-name { color: #ffffff; }
 .session-row .remove-btn { visibility: hidden; }
 .session-row:hover .remove-btn { visibility: visible; }
-.session-labels { flex: 1; min-width: 0; }
+.session-labels { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .session-name { font-weight: 500; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-cwd { color: var(--fg-dim); font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.session-time { color: var(--fg-dim); font-size: 9.5px; }
+.session-time { color: var(--fg-dim); font-size: 9.5px; margin-top: 2px; }
 .session-time.working { color: var(--status-working); }
-.session-cost { color: var(--fg-dim); font-size: 9.5px; margin-left: 4px; opacity: 0.75; }
+.session-cwd.branch-line { font-family: var(--font-mono); font-size: 10px; }
+.wt-badge {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.05em;
+  color: var(--accent); background: var(--bg-active);
+  border-radius: 3px; padding: 1px 4px; margin-left: 6px; vertical-align: 1px;
+}
 .session-row input {
   flex: 1;
   background: var(--bg);
@@ -245,6 +252,7 @@ body {
 .session-row .session-cwd.needs-line { color: var(--status-needs-you); opacity: 1; }
 .session-cwd.tool-line { font-family: var(--font-mono); color: var(--status-working); opacity: 1; }
 .session-row.worktree .session-cwd.tool-line { color: var(--status-working); opacity: 1; }
+.session-row .session-cwd.usage-line { color: var(--fg-dim); font-family: var(--font-mono); font-size: 9.5px; opacity: 0.8; }
 .session-row.worktree .session-name::after {
   content: 'worktree';
   margin-left: 8px;

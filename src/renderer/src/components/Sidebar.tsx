@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { SessionView } from '../../../shared/types'
 import ProjectPanel from './ProjectPanel'
-import { keyOf, projectName, relativeTime, shortCwd } from '../session-utils'
+import { formatTokens, keyOf, projectName, relativeTime, shortCwd } from '../session-utils'
 
 interface SidebarProps {
   sessions: SessionView[]
@@ -31,7 +31,7 @@ function totalUsage(sessions: SessionView[]): string | null {
     tokens += s.cost.inputTokens + s.cost.outputTokens
   }
   if (hasUsd) return `$${usd.toFixed(2)}`
-  if (tokens > 0) return `${Math.round(tokens / 1000)}k tok`
+  if (tokens > 0) return `${formatTokens(tokens)} tok`
   return null
 }
 
@@ -47,12 +47,12 @@ function costChip(cost: SessionView['cost']): { text: string; title: string } | 
   const { costUsd, inputTokens, outputTokens } = cost
   const exact =
     costUsd !== null
-      ? `$${costUsd.toFixed(4)} · ${inputTokens} in / ${outputTokens} out tokens`
-      : `${inputTokens} in / ${outputTokens} out tokens`
+      ? `$${costUsd.toFixed(4)} · ${inputTokens.toLocaleString()} in / ${outputTokens.toLocaleString()} out tokens`
+      : `${inputTokens.toLocaleString()} in / ${outputTokens.toLocaleString()} out tokens`
   if (costUsd !== null && costUsd >= 0.005) return { text: `$${costUsd.toFixed(2)}`, title: exact }
   if (costUsd !== null && costUsd > 0) return { text: '<1¢', title: exact }
   if (costUsd === null && inputTokens + outputTokens > 0) {
-    return { text: `${Math.round((inputTokens + outputTokens) / 1000)}k tok`, title: exact }
+    return { text: `${formatTokens(inputTokens + outputTokens)} tok`, title: exact }
   }
   return null
 }
@@ -204,36 +204,35 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
             ) : (
               <div className="session-labels">
                 <div className="session-name">{s.name}</div>
+                {s.branch && (
+                  <div className="session-cwd branch-line" title={s.worktree ? `${s.branch} (worktree of ${s.worktree.repoRoot})` : s.branch}>
+                    {`⎇ ${s.branch}`}
+                    {s.worktree && <span className="wt-badge">WT</span>}
+                  </div>
+                )}
                 {s.status === 'needs-you' && s.needsYouMessage ? (
                   <div className="session-cwd needs-line" title={s.needsYouMessage}>
                     {s.needsYouMessage}
                   </div>
                 ) : s.currentTool ? (
-                  <div
-                    className="session-cwd tool-line"
-                    title={s.worktree ? `⎇ ${s.worktree.branch} · ▸ ${s.currentTool}` : `▸ ${s.currentTool}`}
-                  >
-                    {s.worktree ? `⎇ ${s.worktree.branch} · ▸ ${s.currentTool}` : `▸ ${s.currentTool}`}
+                  <div className="session-cwd tool-line" title={`▸ ${s.currentTool}`}>
+                    {`▸ ${s.currentTool}`}
                   </div>
                 ) : s.activity ? (
-                  <div className="session-cwd" title={s.worktree ? `⎇ ${s.worktree.branch} · ${s.activity}` : s.activity}>
-                    {s.worktree ? `⎇ ${s.worktree.branch} · ${s.activity}` : s.activity}
-                  </div>
-                ) : s.worktree ? (
-                  <div className="session-cwd" title={s.cwd}>
-                    {`⎇ ${s.worktree.branch}`}
+                  <div className="session-cwd" title={s.activity}>
+                    {s.activity}
                   </div>
                 ) : null}
+                {chip && (
+                  <div className="session-cwd usage-line" title={chip.title}>
+                    {chip.text}
+                  </div>
+                )}
               </div>
             )}
             <span className={`session-time${s.status === 'working' ? ' working' : ''}`}>
               {s.status === 'working' ? workingDuration(s.statusChangedAt) : relativeTime(s.lastActivityAt)}
             </span>
-            {chip && (
-              <span className="session-cost" title={chip.title}>
-                {chip.text}
-              </span>
-            )}
             <button
               className="remove-btn"
               title="Remove session"

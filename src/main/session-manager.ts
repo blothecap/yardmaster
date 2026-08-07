@@ -48,6 +48,7 @@ interface InternalSession {
   lastTool: string | null
   buffer: string
   cost: TranscriptCost | null
+  branch: string | null
 }
 
 const PROMPT_MAX_LEN = 120
@@ -105,7 +106,8 @@ export class SessionManager extends EventEmitter {
         pendingMessage: null,
         lastTool: null,
         buffer: '',
-        cost: null
+        cost: null,
+        branch: null
       })
     }
   }
@@ -121,8 +123,17 @@ export class SessionManager extends EventEmitter {
         activity: s.lastPrompt,
         needsYouMessage: s.status === 'needs-you' ? s.pendingMessage : null,
         cost: s.cost,
-        currentTool: s.status === 'working' ? s.lastTool : null
+        currentTool: s.status === 'working' ? s.lastTool : null,
+        branch: s.meta.worktree?.branch ?? s.branch
       }))
+  }
+
+  /** Record the detected git branch for a plain session (worktree sessions carry their own). */
+  setBranch(id: string, branch: string | null): void {
+    const s = this.sessions.get(id)
+    if (!s || s.meta.worktree || s.branch === branch) return
+    s.branch = branch
+    this.emitChanged()
   }
 
   create(
@@ -157,7 +168,8 @@ export class SessionManager extends EventEmitter {
       pendingMessage: null,
       lastTool: null,
       buffer: '',
-      cost: null
+      cost: null,
+      branch: null
     }
     this.sessions.set(meta.id, session)
     try {

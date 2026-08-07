@@ -23,6 +23,18 @@ export function projectName(key: string, allKeys: string[]): string {
   return clash && parts.length >= 2 ? `${parts[parts.length - 2]}/${base}` : base
 }
 
+/** Human-readable token count: 950, 12.3k, 803k, 1.2M, 803M, 1.1B. */
+export function formatTokens(n: number): string {
+  const fmt = (v: number, unit: string): string => {
+    const r = v >= 100 ? Math.round(v).toString() : v.toFixed(1).replace(/\.0$/, '')
+    return `${r}${unit}`
+  }
+  if (n < 1000) return `${n}`
+  if (n < 1_000_000) return fmt(n / 1000, 'k')
+  if (n < 1_000_000_000) return fmt(n / 1_000_000, 'M')
+  return fmt(n / 1_000_000_000, 'B')
+}
+
 export function relativeTime(ts: number | null): string {
   if (!ts) return ''
   const s = Math.floor((Date.now() - ts) / 1000)

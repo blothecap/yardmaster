@@ -229,6 +229,20 @@ app.whenReady().then(async () => {
       safeSend('sessions:changed', views)
       app.setBadgeCount(views.filter((v: { status: string }) => v.status === 'needs-you').length)
     })
+
+    // Plain sessions don't know their branch (worktree sessions carry theirs); detect it
+    // from cwd now and every 30s so checkouts made in the session show up in the sidebar.
+    const refreshBranches = (): void => {
+      for (const v of manager!.list()) {
+        if (v.worktree) continue
+        currentBranch(v.cwd)
+          .then((b) => manager!.setBranch(v.id, b))
+          .catch(() => {})
+      }
+    }
+    refreshBranches()
+    const branchTimer = setInterval(refreshBranches, 30_000)
+    app.on('before-quit', () => clearInterval(branchTimer))
     manager.on('data', (id, chunk) => safeSend('sessions:data', { id, data: chunk }))
     manager.on('status-transition', (t) => {
       if (shouldNotify(t, manager!.getActiveId())) {

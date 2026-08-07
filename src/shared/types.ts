@@ -42,6 +42,8 @@ export interface SessionView extends SessionMeta {
   needsYouMessage: string | null
   cost: TranscriptCost | null
   currentTool: string | null
+  /** Git branch of cwd — the worktree branch, or the detected branch for plain repo sessions. */
+  branch: string | null
 }
 
 export interface ChangedFile {
