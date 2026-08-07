@@ -1,16 +1,62 @@
 import { execFile } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
-/**
- * GUI-launched Electron apps don't inherit the user's shell PATH, so resolve
- * the claude binary through a login shell once at startup.
- */
-export function resolveClaudePath(): Promise<string | null> {
+function shellProbe(args: string[]): Promise<string | null> {
   return new Promise((resolve) => {
-    execFile(process.env.SHELL ?? '/bin/zsh', ['-lc', 'command -v claude'], { timeout: 5000 }, (err, stdout) => {
-      const p = stdout.trim()
+    execFile(process.env.SHELL ?? '/bin/zsh', args, { timeout: 5000 }, (err, stdout) => {
+      const p = stdout.trim().split('\n').pop() ?? ''
       resolve(err || !p ? null : p)
     })
   })
+}
+
+/** Candidate install locations, best-first. Exported for tests. */
+export function knownClaudeLocations(home: string): string[] {
+  const fixed = [
+    path.join(home, '.local', 'bin', 'claude'), // native installer
+    path.join(home, '.claude', 'local', 'claude'), // claude migrate-installer
+    '/opt/homebrew/bin/claude',
+    '/usr/local/bin/claude',
+    path.join(home, '.volta', 'bin', 'claude'),
+    path.join(home, '.bun', 'bin', 'claude')
+  ]
+  // npm-under-nvm: newest node version first
+  let nvm: string[] = []
+  try {
+    const base = path.join(home, '.nvm', 'versions', 'node')
+    nvm = fs
+      .readdirSync(base)
+      .sort()
+      .reverse()
+      .map((v) => path.join(base, v, 'bin', 'claude'))
+  } catch {
+    nvm = []
+  }
+  return [...fixed, ...nvm]
+}
+
+/**
+ * GUI-launched Electron apps don't inherit the user's shell PATH, so resolve
+ * the claude binary at startup. Try a login shell first (.zprofile), then an
+ * interactive login shell (.zshrc — where most PATH edits actually live),
+ * then well-known install locations.
+ */
+export async function resolveClaudePath(): Promise<string | null> {
+  const fromLogin = await shellProbe(['-lc', 'command -v claude'])
+  if (fromLogin) return fromLogin
+  const fromInteractive = await shellProbe(['-lic', 'command -v claude'])
+  if (fromInteractive) return fromInteractive
+  for (const candidate of knownClaudeLocations(os.homedir())) {
+    try {
+      fs.accessSync(candidate, fs.constants.X_OK)
+      return candidate
+    } catch {
+      /* keep looking */
+    }
+  }
+  return null
 }
 
 /**

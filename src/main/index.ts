@@ -170,6 +170,13 @@ app.whenReady().then(async () => {
     // Login-shell env so ptys see the user's real PATH (npm-installed claude
     // needs `node` resolvable; Finder launches only get launchd's bare PATH).
     const loginEnv = (await resolveLoginEnv()) ?? {}
+    // claude can resolve outside the login-shell PATH (e.g. PATH edits living in
+    // .zshrc) — prepend its bin dir so the pty finds claude AND its node.
+    if (claudePath) {
+      const binDir = path.dirname(claudePath)
+      const basePath = loginEnv.PATH ?? process.env.PATH ?? ''
+      if (!basePath.split(':').includes(binDir)) loginEnv.PATH = `${binDir}:${basePath}`
+    }
     const sessionEnv = (): Record<string, string> => ptyEnv({ ...process.env, ...loginEnv })
     const hookServer = new HookServer()
     const port = await hookServer.start()

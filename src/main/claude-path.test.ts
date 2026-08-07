@@ -20,3 +20,19 @@ describe('resolveLoginEnv', () => {
     }
   })
 })
+
+import { knownClaudeLocations } from './claude-path'
+
+describe('knownClaudeLocations', () => {
+  it('covers the common install locations, native installer first', () => {
+    const locs = knownClaudeLocations('/Users/alice')
+    expect(locs[0]).toBe('/Users/alice/.local/bin/claude')
+    expect(locs).toContain('/Users/alice/.claude/local/claude')
+    expect(locs).toContain('/opt/homebrew/bin/claude')
+    expect(locs).toContain('/usr/local/bin/claude')
+  })
+
+  it('tolerates a missing ~/.nvm without throwing', () => {
+    expect(() => knownClaudeLocations('/nonexistent-home')).not.toThrow()
+  })
+})
