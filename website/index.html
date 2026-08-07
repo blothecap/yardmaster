@@ -336,10 +336,15 @@
     <h2>From source, in a minute.</h2>
     <p class="lede">macOS with Claude Code installed. Node 23+, then:</p>
     <div class="install">
-      <div><span class="c"># one command — checks, builds, installs to /Applications</span></div>
-      <div>git clone https://github.com/blothecap/yardmaster</div>
-      <div>cd yardmaster && ./install.sh</div>
+      <div><span class="c"># one line — clones, checks, builds, installs to /Applications</span></div>
+      <div>curl -fsSL https://yardmaster.vercel.app/install.sh | bash</div>
     </div>
+    <p style="font-size:12.5px;color:var(--fg-dim);margin-top:12px;max-width:640px">
+      Requires GitHub access to the repo (it's private for now) and Xcode Command Line
+      Tools. Prefer to read before you pipe? <a href="install.sh">View the script</a> —
+      it clones to <span style="font-family:var(--mono)">~/yardmaster</span> and runs the
+      repo's installer.
+    </p>
   </section>
 
   <footer>

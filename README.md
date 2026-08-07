@@ -55,9 +55,10 @@ Requirements: macOS, [Claude Code](https://claude.com/claude-code) installed and
 logged in, Node ≥ 23.11 (see `.nvmrc`), Xcode CLT (for the node-pty native build).
 
 ```sh
-git clone https://github.com/blothecap/yardmaster
-cd yardmaster && ./install.sh
+curl -fsSL https://yardmaster.vercel.app/install.sh | bash
 ```
+
+(or clone and run `./install.sh` yourself — the one-liner just does that for you)
 
 The installer checks prerequisites (Xcode CLT, Node ≥ 22.12 — auto-selected via
 nvm when available — and Claude Code), handles the npm 11 / native-module quirks,
