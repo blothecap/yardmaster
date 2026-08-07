@@ -307,9 +307,7 @@ export default function App(): React.JSX.Element {
               </button>
             )}
             {(isTerminals ? termTabs : shellTabs[activeSession!.id] ?? []).map((shellId, i, arr) => {
-              const label = isTerminals
-                ? arr.length === 1 ? 'Terminal' : `Terminal ${i + 1}`
-                : arr.length === 1 ? 'Shell' : `Shell ${i + 1}`
+              const label = arr.length === 1 ? 'Terminal' : `Terminal ${i + 1}`
               const isActive = isTerminals
                 ? termActive === shellId
                 : activeTab[activeSession!.id] === shellId
@@ -317,13 +315,13 @@ export default function App(): React.JSX.Element {
                 <button
                   key={shellId}
                   className={`view-tab${isActive ? ' active' : ''}`}
-                  title={isTerminals ? 'Terminal in your home directory (⌘⌥←/→ to switch tabs)' : "Shell in this session's directory (⌘⌥←/→ to switch tabs)"}
+                  title={isTerminals ? 'Terminal in your home directory (⌘⌥←/→ to switch tabs)' : "Terminal in this session's directory (⌘⌥←/→ to switch tabs)"}
                   onClick={() => selectTab(isTerminals ? TERMINALS_ID : activeSession!.id, shellId)}
                 >
                   {label}
                   <span
                     className="view-tab-close"
-                    title={isTerminals ? 'Close terminal (⌘W)' : 'Close shell'}
+                    title="Close terminal"
                     onClick={(e) => { e.stopPropagation(); window.api.shellKill(shellId) }}
                   >
                     ×
@@ -333,7 +331,7 @@ export default function App(): React.JSX.Element {
             })}
             <button
               className="view-tab view-tab-add"
-              title={isTerminals ? 'New terminal (⌘T)' : 'New shell tab (⌘T)'}
+              title="New terminal (⌘T)"
               onClick={() => newShell(isTerminals ? TERMINALS_ID : activeSession!.id)}
             >
               +
@@ -412,7 +410,7 @@ export default function App(): React.JSX.Element {
         </button>
         <button
           className={`strip-btn${activeSession && (activeTab[activeSession.id] ?? 'claude') !== 'claude' ? ' active' : ''}`}
-          title="Shell in this session's directory (⌘T for a new one)"
+          title="Terminal in this session's directory (⌘T for a new one)"
           disabled={!activeSession}
           onClick={() => {
             if (!activeSession) return
