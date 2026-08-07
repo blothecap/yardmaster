@@ -21,9 +21,21 @@ xcode-select -p >/dev/null 2>&1 || die "Xcode Command Line Tools missing. Run: x
 command -v git >/dev/null || die "git not found."
 ok "macOS $(sw_vers -productVersion), Xcode CLT present"
 
-command -v claude >/dev/null 2>&1 \
-  && ok "Claude Code found ($(claude --version 2>/dev/null | head -1))" \
-  || warn "Claude Code not found on PATH — Yardmaster needs it at runtime: https://claude.com/claude-code"
+# ---- claude code ------------------------------------------------------------
+NEED_CLAUDE_NPM=0
+if command -v claude >/dev/null 2>&1; then
+  ok "Claude Code found ($(claude --version 2>/dev/null | head -1))"
+else
+  bold "Claude Code not found — installing it (native installer)…"
+  curl -fsSL https://claude.ai/install.sh | bash || true
+  export PATH="$HOME/.local/bin:$PATH"
+  if command -v claude >/dev/null 2>&1; then
+    ok "Claude Code installed ($(claude --version 2>/dev/null | head -1))"
+  else
+    warn "Native installer didn't work — will retry via npm once Node is ready"
+    NEED_CLAUDE_NPM=1
+  fi
+fi
 
 cd "$(dirname "$0")"
 [ -f package.json ] && grep -q '"name": "yardmaster"' package.json || die "Run this from the yardmaster repo root."
@@ -49,6 +61,14 @@ if ! node_ok; then
 fi
 node_ok || die "Node >= ${MIN_NODE_MAJOR}.${MIN_NODE_MINOR} required (have: $(node -v 2>/dev/null || echo none)). Install via nvm (https://github.com/nvm-sh/nvm) or nodejs.org, then re-run."
 ok "Node $(node -v)"
+
+if [ "$NEED_CLAUDE_NPM" = "1" ]; then
+  bold "Installing Claude Code via npm…"
+  npm install -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+  command -v claude >/dev/null 2>&1 \
+    && ok "Claude Code installed ($(claude --version 2>/dev/null | head -1))" \
+    || die "Could not install Claude Code automatically. Install it manually (https://claude.com/claude-code), then re-run this script."
+fi
 
 # ---- dependencies -----------------------------------------------------------
 # npm 11 avoids an arborist crash in npm 10.9 on this dependency tree; its
