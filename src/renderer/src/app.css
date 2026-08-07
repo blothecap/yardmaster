@@ -400,7 +400,11 @@ body {
 }
 .fullscreen-message h1 { color: var(--fg); font-size: 20px; }
 .fullscreen-message code { font-family: var(--font-mono); color: var(--accent); }
-.terminal-pane { position: absolute; inset: 0; padding: 8px; }
+/* Padding must live on .xterm, not the container: FitAddon sizes rows from the
+   container's border-box height minus the .xterm element's own padding — padding
+   here silently costs a row and clips the TUI's bottom line. */
+.terminal-pane { position: absolute; inset: 0; }
+.terminal-pane .xterm { padding: 8px; }
 .exited-overlay {
   position: absolute;
   inset: 0;
@@ -530,7 +534,8 @@ body {
 .view-tab-add { padding: 6px 10px 7px; font-size: 14px; }
 
 .shell-pane { position: absolute; inset: 0; }
-.shell-pane-term { position: absolute; inset: 0; padding: 8px; }
+.shell-pane-term { position: absolute; inset: 0; }
+.shell-pane-term .xterm { padding: 8px; }
 
 .activity-strip {
   width: 44px;
