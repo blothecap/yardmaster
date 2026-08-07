@@ -32,6 +32,8 @@ export interface SessionMeta {
   wasRunning?: boolean
   /** HEAD sha at session creation, for plain (non-worktree) sessions — baseline for commitsSince. */
   startCommit?: string | null
+  /** Claude transcript file (from the last Stop hook) — lets usage survive app relaunches. */
+  transcriptPath?: string | null
 }
 
 export interface TranscriptCost {

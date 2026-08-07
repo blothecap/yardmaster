@@ -249,7 +249,18 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
                 )}
               </div>
             )}
-            <span className={`session-time${s.status === 'working' ? ' working' : ''}`}>
+            <span
+              className={`session-time${s.status === 'working' ? ' working' : ''}`}
+              title={
+                s.status === 'working'
+                  ? `Claude has been working for ${workingDuration(s.statusChangedAt).replace('⚡', '')}`
+                  : s.lastActivityAt
+                    ? relativeTime(s.lastActivityAt) === 'now'
+                      ? 'Last activity: just now'
+                      : `Last activity: ${relativeTime(s.lastActivityAt)} ago`
+                    : ''
+              }
+            >
               {s.status === 'working' ? workingDuration(s.statusChangedAt) : relativeTime(s.lastActivityAt)}
             </span>
             <button

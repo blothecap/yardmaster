@@ -34,6 +34,13 @@ export default function TerminalPane({ sessionId, visible }: TerminalPaneProps):
       registerTerminal(sessionId, term)
     })
 
+    // The initial fit can run before 'SF Mono' finishes loading; fallback-font
+    // metrics overestimate rows on tall windows, clipping the bottom of the TUI.
+    // Re-fit once real font metrics are in.
+    document.fonts.ready.then(() => {
+      if (!disposed && containerRef.current!.offsetWidth > 0) fitRef.current?.fit()
+    })
+
     const observer = new ResizeObserver(() => {
       if (containerRef.current!.offsetWidth > 0) fitRef.current?.fit()
     })
@@ -50,10 +57,12 @@ export default function TerminalPane({ sessionId, visible }: TerminalPaneProps):
   }, [sessionId])
 
   useEffect(() => {
-    if (visible) {
-      fitRef.current?.fit()
-      termRef.current?.focus()
-    }
+    if (!visible) return
+    fitRef.current?.fit()
+    termRef.current?.focus()
+    // second fit next frame — catches layout that settles after display flips
+    const raf = requestAnimationFrame(() => fitRef.current?.fit())
+    return () => cancelAnimationFrame(raf)
   }, [visible])
 
   return (

@@ -227,6 +227,7 @@ app.whenReady().then(async () => {
     hookServer.onEvent((id, event, payload) => {
       manager!.handleHookEvent(id, event, payload)
       if (event === 'Stop' && typeof payload.transcript_path === 'string') {
+        manager!.setTranscriptPath(id, payload.transcript_path)
         sessionCost(payload.transcript_path)
           .then((c) => manager!.setCost(id, c))
           .catch(() => {})
@@ -251,6 +252,16 @@ app.whenReady().then(async () => {
     refreshBranches()
     const branchTimer = setInterval(refreshBranches, 30_000)
     app.on('before-quit', () => clearInterval(branchTimer))
+
+    // Usage meters live in memory; recompute them from the last known transcript
+    // so relaunching the app doesn't blank every token count until the next Stop.
+    for (const v of manager.list()) {
+      if (v.transcriptPath) {
+        sessionCost(v.transcriptPath)
+          .then((c) => manager!.setCost(v.id, c))
+          .catch(() => {})
+      }
+    }
     manager.on('data', (id, chunk) => safeSend('sessions:data', { id, data: chunk }))
     manager.on('status-transition', (t) => {
       if (shouldNotify(t, manager!.getActiveId())) {

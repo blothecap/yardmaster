@@ -806,6 +806,23 @@ describe('setCost', () => {
   })
 })
 
+describe('setTranscriptPath', () => {
+  it('persists the path and restores it across manager instances', () => {
+    const m = makeManager()
+    const v = m.create('a', '/tmp')
+    m.setTranscriptPath(v.id, '/tmp/transcript.jsonl')
+    expect(store.load().sessions[0].transcriptPath).toBe('/tmp/transcript.jsonl')
+
+    const m2 = makeManager() // fresh instance, same store
+    expect(m2.list()[0].transcriptPath).toBe('/tmp/transcript.jsonl')
+  })
+
+  it('tolerates unknown ids and skips redundant persists', () => {
+    const m = makeManager()
+    expect(() => m.setTranscriptPath('ghost', '/x')).not.toThrow()
+  })
+})
+
 describe('setBranch', () => {
   it('is null by default, shows through list(), and emits changed once per change', () => {
     const m = makeManager()

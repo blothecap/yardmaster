@@ -128,6 +128,14 @@ export class SessionManager extends EventEmitter {
       }))
   }
 
+  /** Remember the transcript file so usage can be recomputed after an app relaunch. */
+  setTranscriptPath(id: string, transcriptPath: string): void {
+    const s = this.sessions.get(id)
+    if (!s || s.meta.transcriptPath === transcriptPath) return
+    s.meta.transcriptPath = transcriptPath
+    this.persist()
+  }
+
   /** Record the detected git branch for a plain session (worktree sessions carry their own). */
   setBranch(id: string, branch: string | null): void {
     const s = this.sessions.get(id)
