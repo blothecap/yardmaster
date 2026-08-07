@@ -1,6 +1,6 @@
 /// <reference path="../../preload/index.d.ts" />
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { SessionView, ShortcutAction } from '../../shared/types'
+import { TERMINALS_ID, type SessionView, type ShortcutAction } from '../../shared/types'
 import Sidebar from './components/Sidebar'
 import TerminalPane from './components/TerminalPane'
 import ShellPane from './components/ShellPane'
@@ -80,6 +80,11 @@ export default function App(): React.JSX.Element {
 
   const switchTo = useCallback((id: string) => {
     setActiveId(id)
+    if (id === TERMINALS_ID) {
+      window.api.setActive(null) // no Claude session is "active" — notify for all
+      if ((shellTabsRef.current[TERMINALS_ID] ?? []).length === 0) newShellRef.current(TERMINALS_ID)
+      return
+    }
     window.api.setActive(id)
     window.api.activate(id)
   }, [])
@@ -107,6 +112,9 @@ export default function App(): React.JSX.Element {
     selectTab(sessionId, shellId)
   }, [selectTab])
 
+  const newShellRef = useRef(newShell)
+  newShellRef.current = newShell
+
   const cycleTab = useCallback((sessionId: string, dir: 1 | -1) => {
     const tabs = ['claude', ...(shellTabsRef.current[sessionId] ?? [])]
     const cur = activeTabRef.current[sessionId] ?? 'claude'
@@ -132,7 +140,7 @@ export default function App(): React.JSX.Element {
     const offChanged = window.api.onChanged((views) => {
       setSessions(views)
       const current = activeIdRef.current
-      if (current && !views.some((s) => s.id === current)) {
+      if (current && current !== TERMINALS_ID && !views.some((s) => s.id === current)) {
         const next = views[0]?.id ?? null
         setActiveId(next)
         window.api.setActive(next)
@@ -167,16 +175,18 @@ export default function App(): React.JSX.Element {
   const handleShortcut = useCallback((action: ShortcutAction) => {
     const list = sessionsRef.current
     const current = activeIdRef.current
-    const idx = list.findIndex((s) => s.id === current)
+    // ⌘↑/↓ cycle through the Terminals row plus every session, in sidebar order
+    const navIds = [TERMINALS_ID, ...list.map((s) => s.id)]
+    const navIdx = Math.max(0, navIds.indexOf(current ?? ''))
     switch (action.type) {
       case 'jump':
         if (list[action.index]) switchTo(list[action.index].id)
         break
       case 'next':
-        if (list.length) switchTo(list[(idx + 1) % list.length].id)
+        switchTo(navIds[(navIdx + 1) % navIds.length])
         break
       case 'prev':
-        if (list.length) switchTo(list[(idx - 1 + list.length) % list.length].id)
+        switchTo(navIds[(navIdx - 1 + navIds.length) % navIds.length])
         break
       case 'new':
         setDialogOpen(true)
@@ -185,7 +195,15 @@ export default function App(): React.JSX.Element {
         if (current) setRenamingId(current)
         break
       case 'close':
-        if (current) window.api.close(current)
+        if (current === TERMINALS_ID) {
+          // ⌘W in the Terminals view closes the tab you're looking at
+          const tabs = shellTabsRef.current[TERMINALS_ID] ?? []
+          const cur = activeTabRef.current[TERMINALS_ID]
+          const target = tabs.includes(cur) ? cur : tabs[tabs.length - 1]
+          if (target) window.api.shellKill(target)
+        } else if (current) {
+          window.api.close(current)
+        }
         break
       case 'toggle-inbox':
         setRightPane((p) => (p === 'inbox' ? null : 'inbox'))
@@ -207,6 +225,11 @@ export default function App(): React.JSX.Element {
 
   const activeSession = sessions.find((s) => s.id === activeId) ?? null
   const needsYouCount = sessions.filter((s) => s.status === 'needs-you').length
+  const isTerminals = activeId === TERMINALS_ID
+  const termTabs = shellTabs[TERMINALS_ID] ?? []
+  const termActive = termTabs.includes(activeTab[TERMINALS_ID])
+    ? activeTab[TERMINALS_ID]
+    : termTabs[termTabs.length - 1] ?? null
 
   if (!claudeFound) {
     return (
@@ -243,6 +266,9 @@ export default function App(): React.JSX.Element {
           onNewInProject={(dir, worktree) => { setDialogPrefill({ dir, worktree }); setDialogOpen(true) }}
           onOpenInbox={() => setRightPane('inbox')}
           activeSession={activeSession}
+          terminalsActive={isTerminals}
+          terminalCount={termTabs.length}
+          onSelectTerminals={() => switchTo(TERMINALS_ID)}
         />
       )}
       {!collapsed && <div className="v-divider" onMouseDown={(e) => startVDrag('left', e)} />}
@@ -270,35 +296,45 @@ export default function App(): React.JSX.Element {
             </button>
           </div>
         )}
-        {activeSession && (
+        {(activeSession || isTerminals) && (
           <div className="view-tabs">
-            <button
-              className={`view-tab${(activeTab[activeSession.id] ?? 'claude') === 'claude' ? ' active' : ''}`}
-              onClick={() => selectTab(activeSession.id, 'claude')}
-            >
-              Claude
-            </button>
-            {(shellTabs[activeSession.id] ?? []).map((shellId, i, arr) => (
+            {activeSession && !isTerminals && (
               <button
-                key={shellId}
-                className={`view-tab${activeTab[activeSession.id] === shellId ? ' active' : ''}`}
-                title="Shell in this session's directory (⌘⌥←/→ to switch tabs)"
-                onClick={() => selectTab(activeSession.id, shellId)}
+                className={`view-tab${(activeTab[activeSession.id] ?? 'claude') === 'claude' ? ' active' : ''}`}
+                onClick={() => selectTab(activeSession.id, 'claude')}
               >
-                {arr.length === 1 ? 'Shell' : `Shell ${i + 1}`}
-                <span
-                  className="view-tab-close"
-                  title="Close shell"
-                  onClick={(e) => { e.stopPropagation(); window.api.shellKill(shellId) }}
-                >
-                  ×
-                </span>
+                Claude
               </button>
-            ))}
+            )}
+            {(isTerminals ? termTabs : shellTabs[activeSession!.id] ?? []).map((shellId, i, arr) => {
+              const label = isTerminals
+                ? arr.length === 1 ? 'Terminal' : `Terminal ${i + 1}`
+                : arr.length === 1 ? 'Shell' : `Shell ${i + 1}`
+              const isActive = isTerminals
+                ? termActive === shellId
+                : activeTab[activeSession!.id] === shellId
+              return (
+                <button
+                  key={shellId}
+                  className={`view-tab${isActive ? ' active' : ''}`}
+                  title={isTerminals ? 'Terminal in your home directory (⌘⌥←/→ to switch tabs)' : "Shell in this session's directory (⌘⌥←/→ to switch tabs)"}
+                  onClick={() => selectTab(isTerminals ? TERMINALS_ID : activeSession!.id, shellId)}
+                >
+                  {label}
+                  <span
+                    className="view-tab-close"
+                    title={isTerminals ? 'Close terminal (⌘W)' : 'Close shell'}
+                    onClick={(e) => { e.stopPropagation(); window.api.shellKill(shellId) }}
+                  >
+                    ×
+                  </span>
+                </button>
+              )
+            })}
             <button
               className="view-tab view-tab-add"
-              title="New shell tab (⌘T)"
-              onClick={() => newShell(activeSession.id)}
+              title={isTerminals ? 'New terminal (⌘T)' : 'New shell tab (⌘T)'}
+              onClick={() => newShell(isTerminals ? TERMINALS_ID : activeSession!.id)}
             >
               +
             </button>
@@ -321,6 +357,16 @@ export default function App(): React.JSX.Element {
               />
             ))
           )}
+          {termTabs.map((shellId) => (
+            <ShellPane
+              key={shellId}
+              shellId={shellId}
+              visible={isTerminals && termActive === shellId}
+            />
+          ))}
+          {isTerminals && termTabs.length === 0 && (
+            <div className="empty-state">No terminals — press ⌘T to open one.</div>
+          )}
           {activeId &&
             (activeTab[activeId] ?? 'claude') === 'claude' &&
             sessions.find((s) => s.id === activeId)?.status === 'exited' && (
@@ -329,7 +375,7 @@ export default function App(): React.JSX.Element {
               <button onClick={() => window.api.activate(activeId)}>Relaunch</button>
             </div>
           )}
-          {sessions.length === 0 && (
+          {sessions.length === 0 && !isTerminals && (
             <div className="empty-state">No sessions yet — press ⌘N to create one.</div>
           )}
         </div>

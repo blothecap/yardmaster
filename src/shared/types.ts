@@ -1,5 +1,12 @@
 export type SessionStatus = 'working' | 'needs-you' | 'idle' | 'exited'
 
+/**
+ * Pseudo-session id for the standalone "Terminals" workspace — a plain
+ * multi-tab terminal with no Claude session behind it. Its shells live in
+ * the ShellManager under `${TERMINALS_ID}::<n>` keys and spawn in $HOME.
+ */
+export const TERMINALS_ID = '__terminals__'
+
 export type HookEvent = 'SessionStart' | 'UserPromptSubmit' | 'PreToolUse' | 'Notification' | 'Stop'
 
 export const HOOK_EVENTS: HookEvent[] = [

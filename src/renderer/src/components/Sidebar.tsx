@@ -19,6 +19,9 @@ interface SidebarProps {
   onNewInProject(dir: string, worktree: boolean): void
   onOpenInbox(): void
   activeSession: SessionView | null
+  terminalsActive: boolean
+  terminalCount: number
+  onSelectTerminals(): void
 }
 
 function totalUsage(sessions: SessionView[]): string | null {
@@ -128,6 +131,19 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
           Yardmaster
         </span>
         <button className="new-btn" title="New session (⌘N)" onClick={props.onNew}>+</button>
+      </div>
+      <div
+        className={`terminals-row${props.terminalsActive ? ' active' : ''}`}
+        title="Plain terminals, not tied to any Claude session (⌘T for more tabs)"
+        onClick={props.onSelectTerminals}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="m7 9 3 3-3 3" />
+          <path d="M13 15h4" />
+        </svg>
+        <span className="terminals-label">Terminals</span>
+        {props.terminalCount > 0 && <span className="terminals-count">{props.terminalCount}</span>}
       </div>
       <ul>
         {props.sessions.map((s, i) => {

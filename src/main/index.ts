@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, Notification, shell } from '
 import path from 'node:path'
 import fs from 'node:fs'
 import * as pty from 'node-pty' // CJS module — namespace import, not default
-import type { ShortcutAction } from '../shared/types'
+import { TERMINALS_ID, type ShortcutAction } from '../shared/types'
 import { Store } from './store'
 import { writeSessionSettings } from './settings-gen'
 import { HookServer } from './hook-server'
@@ -352,6 +352,10 @@ app.whenReady().then(async () => {
     }
     ipcMain.handle('sessions:remove', (_e, id) => removeSessionFlow(id, true))
     ipcMain.handle('shell:ensure', (_e, { id, sessionId }: { id: string; sessionId: string }) => {
+      if (sessionId === TERMINALS_ID) {
+        shellManager!.ensure(id, app.getPath('home'))
+        return true
+      }
       const session = manager!.list().find((s) => s.id === sessionId)
       if (!session) return false
       shellManager!.ensure(id, session.cwd)
