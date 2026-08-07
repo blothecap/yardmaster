@@ -6,3 +6,5 @@ release/
 build/icon.iconset/
 website/.vercel/
 website/.env.local
+.vercel
+.env*
