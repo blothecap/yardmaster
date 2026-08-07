@@ -1,0 +1,15 @@
+YARDMASTER — early build install (unsigned)
+
+1. Drag Yardmaster to Applications (as usual).
+
+2. macOS will claim the app "is damaged" on first open.
+   It isn't — this build just isn't Apple-notarized yet.
+
+   Fix: open Terminal and run
+
+       xattr -cr /Applications/Yardmaster.app
+
+   then open Yardmaster normally. One time only.
+
+3. Requires an Apple Silicon Mac with Claude Code
+   (https://claude.com/claude-code) installed and logged in.

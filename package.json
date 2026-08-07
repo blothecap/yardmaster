@@ -61,6 +61,27 @@
       "icon": "build/icon.icns",
       "identity": null
     },
-    "npmRebuild": true
+    "npmRebuild": true,
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 190,
+          "type": "file"
+        },
+        {
+          "x": 410,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 270,
+          "y": 340,
+          "type": "file",
+          "path": "build/INSTALL-READ-ME.txt"
+        }
+      ]
+    }
   }
 }
