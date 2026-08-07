@@ -4,8 +4,9 @@ import type { PtyLike } from './session-manager'
 export type ShellSpawner = (cwd: string) => PtyLike
 
 /**
- * One scratch shell per session: lazy, no status tracking, no persistence.
- * Dies with its session or the app.
+ * Scratch shells: lazy, no status tracking, no persistence. Keys are opaque —
+ * the renderer uses `<sessionId>::<n>` so a session can own several tabs.
+ * They die with their session or the app.
  */
 const SHELL_BUFFER_CAP = 200_000
 
@@ -56,6 +57,13 @@ export class ShellManager extends EventEmitter {
     this.shells.delete(sessionId)
     pty.kill()
     this.emit('exit', sessionId)
+  }
+
+  /** Kill every shell belonging to a session (ids are `<sessionId>::<n>`, or the bare id). */
+  killForSession(sessionId: string): void {
+    for (const id of [...this.shells.keys()]) {
+      if (id === sessionId || id.startsWith(sessionId + '::')) this.kill(id)
+    }
   }
 
   disposeAll(): void {

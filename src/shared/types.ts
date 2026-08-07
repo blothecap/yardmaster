@@ -60,4 +60,6 @@ export type ShortcutAction =
   | { type: 'close' } // Cmd+W
   | { type: 'toggle-inbox' } // Cmd+E
   | { type: 'toggle-sidebar' } // Cmd+B
-  | { type: 'toggle-shell' } // Cmd+T
+  | { type: 'new-shell' } // Cmd+T — opens a new shell tab in the active session
+  | { type: 'tab-next' } // Cmd+Opt+Right
+  | { type: 'tab-prev' } // Cmd+Opt+Left

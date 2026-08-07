@@ -127,6 +127,20 @@ describe('ShellManager', () => {
     expect(m.getBuffer('s1')).toBe('new')
   })
 
+  it('killForSession kills only that session\'s shells, bare or ::-suffixed', () => {
+    m.ensure('sess1::1', '/a')
+    m.ensure('sess1::2', '/a')
+    m.ensure('sess10::1', '/b')
+    m.ensure('sess2', '/c')
+    m.killForSession('sess1')
+    expect(m.isRunning('sess1::1')).toBe(false)
+    expect(m.isRunning('sess1::2')).toBe(false)
+    expect(m.isRunning('sess10::1')).toBe(true) // prefix must not over-match
+    expect(m.isRunning('sess2')).toBe(true)
+    m.killForSession('sess2')
+    expect(m.isRunning('sess2')).toBe(false)
+  })
+
   it('disposeAll kills every running shell', () => {
     m.ensure('s1', '/a')
     m.ensure('s2', '/b')

@@ -453,9 +453,12 @@ body {
   border: none;
   border-radius: 5px 5px 0 0;
   color: var(--fg-dim);
-  font-size: 11.5px;
-  padding: 4px 14px 5px;
+  font-size: 13.5px;
+  padding: 6px 16px 7px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 .view-tab:hover { color: var(--fg); }
 .view-tab.active {
@@ -463,6 +466,17 @@ body {
   color: var(--fg);
   font-weight: 500;
 }
+.view-tab-close {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--fg-dim);
+  border-radius: 3px;
+  padding: 1px 3px;
+  visibility: hidden;
+}
+.view-tab:hover .view-tab-close { visibility: visible; }
+.view-tab-close:hover { color: var(--fg); background: var(--bg-hover); }
+.view-tab-add { padding: 6px 10px 7px; font-size: 14px; }
 
 .shell-pane { position: absolute; inset: 0; }
 .shell-pane-term { position: absolute; inset: 0; padding: 8px; }

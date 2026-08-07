@@ -50,7 +50,9 @@ const api = {
   reviewPr: (id: string): Promise<{ ok: boolean; url?: string; error?: string }> =>
     ipcRenderer.invoke('review:pr', id),
   contextMenu: (id: string): void => ipcRenderer.send('sessions:contextMenu', id),
-  shellEnsure: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:ensure', id),
+  shellEnsure: (id: string, sessionId: string): Promise<boolean> =>
+    ipcRenderer.invoke('shell:ensure', { id, sessionId }),
+  shellKill: (id: string): void => ipcRenderer.send('shell:kill', id),
   shellIsRunning: (id: string): Promise<boolean> => ipcRenderer.invoke('shell:isRunning', id),
   shellBuffer: (id: string): Promise<string> => ipcRenderer.invoke('shell:buffer', id),
   shellInput: (id: string, data: string): void => ipcRenderer.send('shell:input', { id, data }),

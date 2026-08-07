@@ -65,6 +65,14 @@ function createWindow(): void {
       sendShortcut({ type: input.key === 'ArrowUp' ? 'prev' : 'next' })
       event.preventDefault()
     }
+    if (
+      input.type === 'keyDown' &&
+      input.meta && input.alt && !input.shift && !input.control &&
+      (input.key === 'ArrowLeft' || input.key === 'ArrowRight')
+    ) {
+      sendShortcut({ type: input.key === 'ArrowLeft' ? 'tab-prev' : 'tab-next' })
+      event.preventDefault()
+    }
   })
 }
 
@@ -90,7 +98,7 @@ function buildMenu(): void {
         { label: 'New Session', accelerator: 'Cmd+N', click: () => sendShortcut({ type: 'new' }) },
         { label: 'Rename Session', accelerator: 'Cmd+R', click: () => sendShortcut({ type: 'rename' }) },
         { label: 'Close Session', accelerator: 'Cmd+W', click: () => sendShortcut({ type: 'close' }) },
-        { label: 'Toggle Shell', accelerator: 'Cmd+T', click: () => sendShortcut({ type: 'toggle-shell' }) },
+        { label: 'New Shell Tab', accelerator: 'Cmd+T', click: () => sendShortcut({ type: 'new-shell' }) },
         { type: 'separator' },
         ...jumpItems
       ]
@@ -300,7 +308,7 @@ app.whenReady().then(async () => {
     ipcMain.handle('sessions:setActive', (_e, id) => manager!.setActive(id))
     ipcMain.handle('sessions:rename', (_e, { id, name }) => manager!.rename(id, name))
     ipcMain.handle('sessions:close', (_e, id) => {
-      shellManager!.kill(id)
+      shellManager!.killForSession(id)
       manager!.close(id)
     })
     async function removeSessionFlow(id: string, plainAlreadyConfirmed: boolean): Promise<void> {
@@ -316,7 +324,7 @@ app.whenReady().then(async () => {
           detail: `Worktree: ${session.cwd}\nBranch: ${session.worktree.branch}\n\n"Keep branch" leaves the work recoverable in git.`
         })
         if (r.response === 2) return
-        shellManager!.kill(id)
+        shellManager!.killForSession(id)
         manager!.remove(id)
         try {
           await removeWorktree(session.worktree.repoRoot, session.cwd, session.worktree.branch, r.response === 0)
@@ -339,16 +347,17 @@ app.whenReady().then(async () => {
         })
         if (r.response !== 0) return
       }
-      shellManager!.kill(id)
+      shellManager!.killForSession(id)
       manager!.remove(id)
     }
     ipcMain.handle('sessions:remove', (_e, id) => removeSessionFlow(id, true))
-    ipcMain.handle('shell:ensure', (_e, id: string) => {
-      const session = manager!.list().find((s) => s.id === id)
+    ipcMain.handle('shell:ensure', (_e, { id, sessionId }: { id: string; sessionId: string }) => {
+      const session = manager!.list().find((s) => s.id === sessionId)
       if (!session) return false
       shellManager!.ensure(id, session.cwd)
       return true
     })
+    ipcMain.on('shell:kill', (_e, id: string) => shellManager!.kill(id))
     ipcMain.handle('shell:isRunning', (_e, id: string) => shellManager!.isRunning(id))
     ipcMain.handle('shell:buffer', (_e, id: string) => shellManager!.getBuffer(id))
     ipcMain.on('shell:input', (_e, { id, data }) => shellManager!.write(id, data))

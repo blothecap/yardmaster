@@ -5,11 +5,11 @@ import { createTerm } from '../xterm-factory'
 import { getTerminal, registerTerminal, unregisterTerminal } from '../terminal-registry'
 
 interface ShellPaneProps {
-  sessionId: string
+  shellId: string
   visible: boolean
 }
 
-export default function ShellPane({ sessionId, visible }: ShellPaneProps): React.JSX.Element {
+export default function ShellPane({ shellId, visible }: ShellPaneProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const fitRef = useRef<FitAddon | null>(null)
   const termRef = useRef<Terminal | null>(null)
@@ -17,19 +17,19 @@ export default function ShellPane({ sessionId, visible }: ShellPaneProps): React
   useEffect(() => {
     const { term, fit } = createTerm()
     // handlers must exist before the first fit(), or the initial resize event is lost
-    term.onData((data) => window.api.shellInput(sessionId, data))
-    term.onResize(({ cols, rows }) => window.api.shellResize(sessionId, cols, rows))
+    term.onData((data) => window.api.shellInput(shellId, data))
+    term.onResize(({ cols, rows }) => window.api.shellResize(shellId, cols, rows))
     term.open(containerRef.current!)
     fit.fit()
-    window.api.shellResize(sessionId, term.cols, term.rows)
+    window.api.shellResize(shellId, term.cols, term.rows)
     termRef.current = term
     fitRef.current = fit
 
     // Replay buffered output (pane switches unmount this component; the shell keeps
     // running in main) before going live — register only after replay for ordering.
-    const registryKey = `shell:${sessionId}`
+    const registryKey = `shell:${shellId}`
     let disposed = false
-    window.api.shellBuffer(sessionId).then((buf) => {
+    window.api.shellBuffer(shellId).then((buf) => {
       if (disposed) return
       if (buf) term.write(buf)
       registerTerminal(registryKey, term)
@@ -48,7 +48,7 @@ export default function ShellPane({ sessionId, visible }: ShellPaneProps): React
         term.dispose() // replay never completed; never registered
       }
     }
-  }, [sessionId])
+  }, [shellId])
 
   useEffect(() => {
     if (visible) {
