@@ -186,7 +186,7 @@ export default function App(): React.JSX.Element {
       <div className="app fullscreen-message">
         <h1>claude not found</h1>
         <p>
-          Switchyard could not find the <code>claude</code> binary on your PATH.
+          Yardmaster could not find the <code>claude</code> binary on your PATH.
           Install Claude Code (<code>npm install -g @anthropic-ai/claude-code</code>) or make
           sure your login shell exposes it, then relaunch this app.
         </p>
@@ -228,7 +228,7 @@ export default function App(): React.JSX.Element {
         {resumableIds.length > 0 && (
           <div className="banner banner-neutral">
             {resumableIds.length} session{resumableIds.length === 1 ? '' : 's'} were running when
-            Switchyard last quit
+            Yardmaster last quit
             <button
               className="banner-action"
               onClick={() => {

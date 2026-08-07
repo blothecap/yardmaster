@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Switchyard — a cockpit for your Claude Code sessions</title>
+<title>Yardmaster — a cockpit for your Claude Code sessions</title>
 <meta name="description" content="Run many Claude Code sessions like a fleet: live hook-driven status, a waiting-on-you inbox, isolated git worktrees with one-click merge, and full-area terminals. macOS." />
 <link rel="icon" type="image/png" href="icon.png" />
-<meta property="og:title" content="Switchyard" />
+<meta property="og:title" content="Yardmaster" />
 <meta property="og:description" content="A cockpit for running and managing multiple Claude Code sessions." />
 <meta property="og:image" content="icon.png" />
 <style>
@@ -173,35 +173,35 @@
 <body>
 <div class="wrap">
   <nav>
-    <span class="brand"><img src="icon.png" alt="" />Switchyard</span>
+    <span class="brand"><img src="icon.png" alt="" />Yardmaster</span>
     <span class="nav-links">
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
       <a href="#shortcuts">Shortcuts</a>
-      <a href="https://github.com/blothecap/switchyard">GitHub</a>
+      <a href="https://github.com/blothecap/yardmaster">GitHub</a>
     </span>
   </nav>
 
   <header>
-    <span class="hero-badge">macOS · open the yard</span>
-    <h1>Run your Claude Code sessions<br /><span class="dim">like a switchyard.</span></h1>
+    <span class="hero-badge">macOS · the yard is open</span>
+    <h1>Run your Claude Code sessions<br /><span class="dim">like a rail yard.</span></h1>
     <p class="sub">
       Every dev runs three Claudes at once and loses track of all of them.
-      Switchyard is the control tower: named sessions grouped by project, status you can
+      Yardmaster is the control tower: named sessions grouped by project, status you can
       trust, and isolated git worktrees for truly parallel agents.
     </p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="https://github.com/blothecap/switchyard">Get Switchyard</a>
+      <a class="btn btn-primary" href="https://github.com/blothecap/yardmaster">Get Yardmaster</a>
       <a class="btn btn-ghost" href="#how">How it works</a>
     </div>
-    <p class="hero-note">Build from source today — <code>npm run dist</code> produces Switchyard.app</p>
+    <p class="hero-note">Build from source today — <code>npm run dist</code> produces Yardmaster.app</p>
 
-    <div class="mock" role="img" aria-label="Switchyard app interface">
+    <div class="mock" role="img" aria-label="Yardmaster app interface">
       <div class="mock-titlebar">
         <span class="tl" style="background:#ff5f57"></span>
         <span class="tl" style="background:#febc2e"></span>
         <span class="tl" style="background:#28c840"></span>
-        <span class="mock-title">Switchyard</span>
+        <span class="mock-title">Yardmaster</span>
       </div>
       <div class="mock-body">
         <div class="mock-side">
@@ -260,7 +260,7 @@
     <p class="kicker">Features</p>
     <h2>Status you can trust.<br />Parallelism you can merge.</h2>
     <p class="lede">
-      Switchyard doesn't guess what your agents are doing by scraping terminal output —
+      Yardmaster doesn't guess what your agents are doing by scraping terminal output —
       it wires Claude Code's own hooks into a local server, so every dot, badge, and
       timer is the truth.
     </p>
@@ -305,7 +305,7 @@
       <div class="step">
         <span class="n">02</span>
         <b>Hooks report the truth</b>
-        <span>Switchyard injects Claude Code hooks that call a loopback server on every prompt, tool call, permission request, and completion. Status is knowledge, not inference.</span>
+        <span>Yardmaster injects Claude Code hooks that call a loopback server on every prompt, tool call, permission request, and completion. Status is knowledge, not inference.</span>
       </div>
       <div class="step">
         <span class="n">03</span>
@@ -336,16 +336,16 @@
     <p class="lede">macOS with Claude Code installed. Node 23+, then:</p>
     <div class="install">
       <div><span class="c"># clone, build, install</span></div>
-      <div>git clone https://github.com/blothecap/switchyard</div>
-      <div>cd switchyard && nvm use</div>
+      <div>git clone https://github.com/blothecap/yardmaster</div>
+      <div>cd yardmaster && nvm use</div>
       <div>npx -y npm@11 install</div>
       <div>npm run dist</div>
-      <div>cp -R release/mac-arm64/Switchyard.app /Applications/</div>
+      <div>cp -R release/mac-arm64/Yardmaster.app /Applications/</div>
     </div>
   </section>
 
   <footer>
-    <span class="brand"><img src="icon.png" alt="" />Switchyard</span>
+    <span class="brand"><img src="icon.png" alt="" />Yardmaster</span>
     <span>Sessions as tracks · worktrees as sidings · you in the control tower</span>
   </footer>
 </div>

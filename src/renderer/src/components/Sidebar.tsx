@@ -125,7 +125,7 @@ export default function Sidebar(props: SidebarProps): React.JSX.Element {
             <circle cx="148" cy="106" r="40" fill="#5cb176" />
             <circle cx="364" cy="106" r="40" fill="#eb5757" />
           </svg>
-          Switchyard
+          Yardmaster
         </span>
         <button className="new-btn" title="New session (⌘N)" onClick={props.onNew}>+</button>
       </div>

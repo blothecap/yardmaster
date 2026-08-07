@@ -1,5 +1,5 @@
 {
-  "name": "switchyard",
+  "name": "yardmaster",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -42,11 +42,11 @@
     "fsevents@2.3.3": true,
     "electron-winstaller@5.4.0": true
   },
-  "productName": "Switchyard",
-  "description": "Switchyard — a cockpit for running and managing multiple Claude Code sessions",
+  "productName": "Yardmaster",
+  "description": "Yardmaster \u2014 a cockpit for running and managing multiple Claude Code sessions",
   "build": {
-    "appId": "com.blothecap.switchyard",
-    "productName": "Switchyard",
+    "appId": "com.blothecap.yardmaster",
+    "productName": "Yardmaster",
     "directories": {
       "buildResources": "build",
       "output": "release"

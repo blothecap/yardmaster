@@ -38,7 +38,7 @@ function createWindow(): void {
     height: 820,
     minWidth: 800,
     minHeight: 500,
-    title: 'Switchyard',
+    title: 'Yardmaster',
     backgroundColor: '#0f0f0f',
     webPreferences: {
       preload: path.join(import.meta.dirname, '../preload/index.mjs'),
@@ -113,7 +113,7 @@ function buildMenu(): void {
   Menu.setApplicationMenu(menu)
 }
 
-app.setName('switchyard')
+app.setName('yardmaster')
 
 // Two instances would fight over sessions.json and spawn duplicate ptys.
 if (!app.requestSingleInstanceLock()) {
@@ -129,16 +129,21 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 /**
- * The app was previously named claude-terminal; carry existing sessions and
- * per-session settings over to the new identity's userData dir once.
+ * The app has been renamed twice (claude-terminal -> switchyard -> yardmaster);
+ * carry existing sessions and per-session settings over to the new identity's
+ * userData dir once, preferring the most recent prior identity.
  */
 function migrateLegacyUserData(): void {
   const userData = app.getPath('userData')
-  const legacy = path.join(app.getPath('appData'), 'claude-terminal')
   try {
-    if (!fs.existsSync(path.join(userData, 'sessions.json')) && fs.existsSync(path.join(legacy, 'sessions.json'))) {
-      fs.mkdirSync(userData, { recursive: true })
-      fs.cpSync(legacy, userData, { recursive: true })
+    if (fs.existsSync(path.join(userData, 'sessions.json'))) return
+    for (const prior of ['switchyard', 'claude-terminal']) {
+      const legacy = path.join(app.getPath('appData'), prior)
+      if (fs.existsSync(path.join(legacy, 'sessions.json'))) {
+        fs.mkdirSync(userData, { recursive: true })
+        fs.cpSync(legacy, userData, { recursive: true })
+        return
+      }
     }
   } catch {
     // migration is best-effort; a fresh start is the fallback
