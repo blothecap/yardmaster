@@ -26,6 +26,7 @@ export default function App(): React.JSX.Element {
   const [shellTabs, setShellTabs] = useState<Record<string, string[]>>({})
   const [activeTab, setActiveTab] = useState<Record<string, string>>({})
   const shellSeq = useRef(1)
+  const [updateInfo, setUpdateInfo] = useState<{ current: string; latest: string } | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('ct.sidebarWidth')) || 240)
   const [rightWidth, setRightWidth] = useState(() => Number(localStorage.getItem('ct.rightWidth')) || 380)
 
@@ -168,7 +169,8 @@ export default function App(): React.JSX.Element {
         return { ...prev, [sessionId]: remaining[remaining.length - 1] ?? 'claude' }
       })
     })
-    return () => { offChanged(); offFocus(); offShortcut(); offData(); offStartRename(); offShellData(); offShellExit() }
+    const offUpdate = window.api.onUpdateAvailable((info) => setUpdateInfo(info))
+    return () => { offChanged(); offFocus(); offShortcut(); offData(); offStartRename(); offShellData(); offShellExit(); offUpdate() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -279,6 +281,21 @@ export default function App(): React.JSX.Element {
         {corruptBackup && (
           <div className="banner">
             sessions.json was corrupt — a backup was saved to {corruptBackup}
+          </div>
+        )}
+        {updateInfo && (
+          <div className="banner banner-neutral">
+            Yardmaster v{updateInfo.latest} is available (you have v{updateInfo.current})
+            <button
+              className="banner-action"
+              title="Quits the app, rebuilds from the latest source, and relaunches"
+              onClick={() => window.api.updateNow()}
+            >
+              Update &amp; restart
+            </button>
+            <button className="banner-action" onClick={() => setUpdateInfo(null)}>
+              Later
+            </button>
           </div>
         )}
         {resumableIds.length > 0 && (

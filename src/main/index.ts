@@ -10,6 +10,9 @@ import { SessionManager, type SpawnOpts } from './session-manager'
 import { ShellManager } from './shell-manager'
 import { resolveClaudePath, resolveLoginEnv } from './claude-path'
 import { shouldNotify } from './notify-policy'
+import { fetchLatestVersion, isNewerVersion, updateHelperScript } from './update-check'
+import { spawn } from 'node:child_process'
+import os from 'node:os'
 import { createWorktree, detectRepoRoot, removeWorktree } from './worktree'
 import { ptyEnv } from './clean-env'
 import {
@@ -259,6 +262,31 @@ app.whenReady().then(async () => {
     refreshBranches()
     const branchTimer = setInterval(refreshBranches, 30_000)
     app.on('before-quit', () => clearInterval(branchTimer))
+
+    // Update check: compare app version against the latest GitHub release tag
+    // (one anonymous API call) on launch and every 6h. Never blocks, never phones
+    // home beyond this public endpoint.
+    const checkForUpdate = async (): Promise<void> => {
+      const latest = await fetchLatestVersion()
+      if (latest && isNewerVersion(latest, app.getVersion())) {
+        safeSend('app:updateAvailable', { current: app.getVersion(), latest })
+      }
+    }
+    setTimeout(checkForUpdate, 5000)
+    const updateTimer = setInterval(checkForUpdate, 6 * 60 * 60 * 1000)
+    app.on('before-quit', () => clearInterval(updateTimer))
+    ipcMain.handle('app:updateNow', () => {
+      // Detached helper outlives us: waits for our exit (quit guard still
+      // applies), then pull+rebuild+reinstall via the public installer.
+      const script = path.join(os.tmpdir(), `yardmaster-update-${process.pid}.sh`)
+      fs.writeFileSync(script, updateHelperScript(process.pid), { mode: 0o755 })
+      spawn('/bin/bash', [script], {
+        detached: true,
+        stdio: 'ignore',
+        env: sessionEnv() // login-shell PATH so node/npm resolve in the rebuild
+      }).unref()
+      app.quit()
+    })
 
     // Usage meters live in memory; recompute them from the last known transcript
     // so relaunching the app doesn't blank every token count until the next Stop.

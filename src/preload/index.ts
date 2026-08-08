@@ -92,7 +92,13 @@ const api = {
     const h = (_e: Electron.IpcRendererEvent, action: ShortcutAction): void => cb(action)
     ipcRenderer.on('app:shortcut', h)
     return () => ipcRenderer.removeListener('app:shortcut', h)
-  }
+  },
+  onUpdateAvailable: (cb: (info: { current: string; latest: string }) => void): (() => void) => {
+    const h = (_e: Electron.IpcRendererEvent, info: { current: string; latest: string }): void => cb(info)
+    ipcRenderer.on('app:updateAvailable', h)
+    return () => ipcRenderer.removeListener('app:updateAvailable', h)
+  },
+  updateNow: (): Promise<void> => ipcRenderer.invoke('app:updateNow')
 }
 
 export type Api = typeof api

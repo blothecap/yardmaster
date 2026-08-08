@@ -94,7 +94,12 @@ ok "Built release/mac-arm64/Yardmaster.app"
 
 # ---- install ----------------------------------------------------------------
 osascript -e 'quit app "Yardmaster"' >/dev/null 2>&1 || true
-sleep 1
+# wait for a clean exit — the app may show a quit-confirmation dialog first
+i=0
+while pgrep -x Yardmaster >/dev/null 2>&1; do
+  [ $i -ge 60 ] && die "Yardmaster is still running (answer its quit dialog), then re-run this script."
+  sleep 1; i=$((i+1))
+done
 rm -rf /Applications/Yardmaster.app
 cp -R "release/mac-arm64/Yardmaster.app" /Applications/
 ok "Installed to /Applications/Yardmaster.app"
