@@ -6,6 +6,7 @@ export interface ProjectInfo {
   branch: string | null // 'detached' when HEAD is detached
   dirtyFiles: number
   ahead: number | null // commits ahead of baseBranch (only when baseBranch given)
+  lastCommit: { sha: string; subject: string } | null
 }
 
 function git(cwd: string, ...args: string[]): Promise<string> {
@@ -20,7 +21,7 @@ function git(cwd: string, ...args: string[]): Promise<string> {
 /** Snapshot of a directory's git state. Never throws — failures degrade to nulls/zeros. */
 export async function projectInfo(cwd: string, baseBranch?: string): Promise<ProjectInfo> {
   const repoRoot = await detectRepoRoot(cwd)
-  if (!repoRoot) return { repoRoot: null, branch: null, dirtyFiles: 0, ahead: null }
+  if (!repoRoot) return { repoRoot: null, branch: null, dirtyFiles: 0, ahead: null, lastCommit: null }
 
   let branch: string | null = null
   try {
@@ -48,5 +49,14 @@ export async function projectInfo(cwd: string, baseBranch?: string): Promise<Pro
     }
   }
 
-  return { repoRoot, branch, dirtyFiles, ahead }
+  let lastCommit: ProjectInfo['lastCommit'] = null
+  try {
+    const line = await git(cwd, 'log', '-1', '--format=%h %s')
+    const sp = line.indexOf(' ')
+    if (sp > 0) lastCommit = { sha: line.slice(0, sp), subject: line.slice(sp + 1) }
+  } catch {
+    lastCommit = null // e.g. empty repo with no commits
+  }
+
+  return { repoRoot, branch, dirtyFiles, ahead, lastCommit }
 }

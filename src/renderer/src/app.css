@@ -103,7 +103,27 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
+.project-panel-path {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 400;
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.project-panel-commit {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.project-panel-commit .commit-sha { color: var(--accent); }
 .project-panel-row {
   display: flex;
   align-items: center;

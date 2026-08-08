@@ -31,7 +31,8 @@ describe('projectInfo', () => {
       repoRoot: null,
       branch: null,
       dirtyFiles: 0,
-      ahead: null
+      ahead: null,
+      lastCommit: null
     })
   })
 
@@ -67,5 +68,14 @@ describe('projectInfo', () => {
     const info = await projectInfo(repo, 'no-such-branch')
     expect(info.ahead).toBeNull()
     expect(info.branch).toBe('main')
+  })
+})
+
+describe('lastCommit', () => {
+  it('returns the short sha and subject of HEAD', async () => {
+    const info = await projectInfo(repo)
+    expect(info.lastCommit).not.toBeNull()
+    expect(info.lastCommit!.sha).toMatch(/^[0-9a-f]{7,}$/)
+    expect(info.lastCommit!.subject.length).toBeGreaterThan(0)
   })
 })
