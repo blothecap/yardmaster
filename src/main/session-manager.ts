@@ -18,6 +18,9 @@ export interface SpawnOpts {
   cols: number
   rows: number
   extraArgs: string[]
+  /** First spawn of a forked session: resumeId is the SOURCE session's claude id
+   *  and the spawner adds --fork-session so claude branches the conversation. */
+  fork?: boolean
 }
 
 export type PtySpawner = (opts: SpawnOpts) => PtyLike
@@ -149,7 +152,8 @@ export class SessionManager extends EventEmitter {
     cwd: string,
     worktree: SessionMeta['worktree'] = null,
     extraArgs: string | null = null,
-    startCommit: string | null = null
+    startCommit: string | null = null,
+    forkFromClaudeId: string | null = null
   ): SessionView {
     const order = Math.max(-1, ...[...this.sessions.values()].map((s) => s.meta.order)) + 1
     const meta: SessionMeta = {
@@ -181,7 +185,10 @@ export class SessionManager extends EventEmitter {
     }
     this.sessions.set(meta.id, session)
     try {
-      this.spawn(session, null)
+      // Forks resume the source conversation once with --fork-session; the new
+      // session then adopts its own claude id via the SessionStart hook, so
+      // later respawns resume the fork, not the source.
+      this.spawn(session, forkFromClaudeId, forkFromClaudeId !== null)
     } catch (err) {
       this.sessions.delete(meta.id)
       throw err
@@ -330,11 +337,11 @@ export class SessionManager extends EventEmitter {
     this.emit('data', s.meta.id, chunk)
   }
 
-  private spawn(s: InternalSession, resumeId: string | null): void {
+  private spawn(s: InternalSession, resumeId: string | null, fork = false): void {
     const settingsPath = this.deps.writeSettings(s.meta.id)
     const { cols, rows } = s.lastSize ?? { cols: 80, rows: 24 }
     const extraArgs = (s.meta.extraArgs ?? '').split(/\s+/).filter(Boolean)
-    const pty = this.deps.spawner({ cwd: s.meta.cwd, settingsPath, resumeId, cols, rows, extraArgs })
+    const pty = this.deps.spawner({ cwd: s.meta.cwd, settingsPath, resumeId, cols, rows, extraArgs, fork })
     s.pty = pty
     s.spawnedAt = this.deps.now()
     s.spawnedWithResume = resumeId !== null

@@ -200,6 +200,7 @@ app.whenReady().then(async () => {
       const args = [
         '--settings', opts.settingsPath,
         ...(opts.resumeId ? ['--resume', opts.resumeId] : []),
+        ...(opts.fork ? ['--fork-session'] : []),
         ...opts.extraArgs
       ]
       const proc = pty.spawn(claudePath, args, {
@@ -413,12 +414,62 @@ app.whenReady().then(async () => {
     ipcMain.on('shell:input', (_e, { id, data }) => shellManager!.write(id, data))
     ipcMain.on('shell:resize', (_e, { id, cols, rows }) => shellManager!.resize(id, cols, rows))
     ipcMain.handle('sessions:reorder', (_e, ids) => manager!.reorder(ids))
+    /**
+     * Fork a session: duplicate its Claude conversation (--fork-session) into a
+     * new session, isolated in a fresh worktree branched from the source's HEAD
+     * when the session lives in a git repo. Uncommitted changes stay behind —
+     * the fork gets the conversation plus committed state.
+     */
+    async function forkSessionFlow(id: string): Promise<void> {
+      const source = manager!.list().find((s) => s.id === id)
+      if (!source || !win || win.isDestroyed()) return
+      if (!source.claudeSessionId) {
+        dialog.showMessageBox(win, {
+          type: 'info',
+          message: 'Nothing to fork yet',
+          detail: 'This session has no Claude conversation to fork — send it a prompt first.'
+        })
+        return
+      }
+      try {
+        const repoRoot = source.worktree?.repoRoot ?? (await detectRepoRoot(source.cwd))
+        const name = `${source.name} (fork)`
+        let view
+        if (repoRoot) {
+          const srcBranch = source.worktree?.branch ?? (await currentBranch(source.cwd)) ?? undefined
+          const wt = await createWorktree(repoRoot, name, {
+            baseRef: srcBranch,
+            // the fork's merge target is whatever the source was targeting
+            baseBranch: source.worktree?.baseBranch ?? srcBranch
+          })
+          view = manager!.create(
+            name,
+            wt.path,
+            { repoRoot, branch: wt.branch, baseBranch: wt.baseBranch },
+            source.extraArgs ?? null,
+            null,
+            source.claudeSessionId
+          )
+        } else {
+          // not a git repo — fork the conversation in place, same directory
+          view = manager!.create(name, source.cwd, null, source.extraArgs ?? null, null, source.claudeSessionId)
+        }
+        safeSend('sessions:focus', view.id)
+      } catch (err) {
+        dialog.showErrorBox('Fork failed', err instanceof Error ? err.message : String(err))
+      }
+    }
     ipcMain.on('sessions:contextMenu', (_e, id: string) => {
       const session = manager!.list().find((s) => s.id === id)
       if (!session || !win || win.isDestroyed()) return
       const live = session.status !== 'exited'
       const template: Electron.MenuItemConstructorOptions[] = [
         { label: 'Rename', click: () => safeSend('sessions:startRename', id) },
+        {
+          label: 'Fork Session',
+          enabled: session.claudeSessionId !== null,
+          click: () => { void forkSessionFlow(id) }
+        },
         live
           ? { label: 'Close', click: () => manager!.close(id) }
           : { label: 'Relaunch', click: () => safeSend('sessions:focus', id) },

@@ -99,3 +99,27 @@ describe('removeWorktree', () => {
     expect(git(repo, 'rev-parse', '--verify', 'refs/heads/kept')).toBeTruthy()
   })
 })
+
+describe('createWorktree with baseRef (forks)', () => {
+  it('branches from the given ref, not the checked-out HEAD, and honors baseBranch override', async () => {
+    // feature branch with an extra commit; main stays behind
+    git(repo, 'checkout', '-b', 'feature')
+    fs.writeFileSync(path.join(repo, 'b.txt'), 'feature work')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-m', 'feature commit')
+    const featureTip = git(repo, 'rev-parse', 'HEAD')
+    git(repo, 'checkout', 'main')
+
+    const wt = await createWorktree(repo, 'my fork', { baseRef: 'feature', baseBranch: 'main' })
+    expect(git(wt.path, 'rev-parse', 'HEAD')).toBe(featureTip)
+    expect(fs.existsSync(path.join(wt.path, 'b.txt'))).toBe(true)
+    expect(wt.baseBranch).toBe('main')
+  })
+
+  it('without baseRef keeps the old behavior: branches from repoRoot HEAD', async () => {
+    const mainTip = git(repo, 'rev-parse', 'HEAD')
+    const wt = await createWorktree(repo, 'plain wt')
+    expect(git(wt.path, 'rev-parse', 'HEAD')).toBe(mainTip)
+    expect(wt.baseBranch).toBe('main')
+  })
+})

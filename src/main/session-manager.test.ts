@@ -55,7 +55,8 @@ describe('create', () => {
       resumeId: null,
       cols: 80,
       rows: 24,
-      extraArgs: []
+      extraArgs: [],
+      fork: false
     })
     expect(view.status).toBe('idle')
     expect(store.load().sessions).toHaveLength(1)
@@ -856,5 +857,34 @@ describe('setBranch', () => {
   it('tolerates unknown session ids', () => {
     const m = makeManager()
     expect(() => m.setBranch('ghost', 'main')).not.toThrow()
+  })
+})
+
+describe('fork', () => {
+  it('first spawn resumes the source claude id with fork=true, then adopts its own id', () => {
+    const m = makeManager()
+    const v = m.create('copy', '/tmp', null, '--model opus', null, 'source-claude-id')
+
+    expect(spawns[0].opts.resumeId).toBe('source-claude-id')
+    expect(spawns[0].opts.fork).toBe(true)
+    expect(spawns[0].opts.extraArgs).toEqual(['--model', 'opus'])
+    expect(m.list()[0].claudeSessionId).toBeNull() // not inherited — assigned by hook
+
+    // claude reports the fork's OWN new session id
+    m.handleHookEvent(v.id, 'SessionStart', { session_id: 'forked-own-id' })
+    expect(m.list()[0].claudeSessionId).toBe('forked-own-id')
+
+    // respawn after exit resumes the fork itself, without --fork-session
+    spawns[0].pty.exitCb!({ exitCode: 0 })
+    m.activate(v.id)
+    expect(spawns[1].opts.resumeId).toBe('forked-own-id')
+    expect(spawns[1].opts.fork).toBe(false)
+  })
+
+  it('normal create spawns without fork', () => {
+    const m = makeManager()
+    m.create('plain', '/tmp')
+    expect(spawns[0].opts.resumeId).toBeNull()
+    expect(spawns[0].opts.fork).toBe(false)
   })
 })

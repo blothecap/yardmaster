@@ -57,15 +57,22 @@ async function ensureExcluded(repoRoot: string): Promise<void> {
   }
 }
 
-export async function createWorktree(repoRoot: string, sessionName: string): Promise<WorktreeInfo> {
+export async function createWorktree(
+  repoRoot: string,
+  sessionName: string,
+  opts: { baseRef?: string; baseBranch?: string } = {}
+): Promise<WorktreeInfo> {
   const base = slugify(sessionName)
   let branch = base
   for (let i = 2; await branchExists(repoRoot, branch); i++) branch = `${base}-${i}`
   await ensureExcluded(repoRoot)
   const wtPath = worktreePathFor(repoRoot, branch)
   const currentBranch = await git(repoRoot, 'rev-parse', '--abbrev-ref', 'HEAD')
-  const baseBranch = currentBranch === 'HEAD' ? 'main' : currentBranch
-  await git(repoRoot, 'worktree', 'add', wtPath, '-b', branch)
+  const baseBranch = opts.baseBranch ?? (currentBranch === 'HEAD' ? 'main' : currentBranch)
+  // baseRef lets forks branch from the SOURCE session's branch tip instead of
+  // whatever repoRoot happens to have checked out
+  if (opts.baseRef) await git(repoRoot, 'worktree', 'add', wtPath, '-b', branch, opts.baseRef)
+  else await git(repoRoot, 'worktree', 'add', wtPath, '-b', branch)
   return { path: wtPath, branch, baseBranch }
 }
 
