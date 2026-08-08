@@ -25,7 +25,7 @@ describe('updateHelperScript', () => {
   it('waits on the given pid and falls back to reopening the app', () => {
     const s = updateHelperScript(12345)
     expect(s).toContain('kill -0 12345')
-    expect(s).toContain('yard-master.vercel.app/install.sh')
+    expect(s).toContain('yardmaster.me/install.sh')
     expect(s).toContain('open /Applications/Yardmaster.app')
   })
 })

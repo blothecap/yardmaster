@@ -1,6 +1,6 @@
 #!/bin/bash
 # Yardmaster bootstrap — one-liner installer.
-#   curl -fsSL https://yard-master.vercel.app/install.sh | bash
+#   curl -fsSL https://yardmaster.me/install.sh | bash
 # Clones (or updates) the repo into ~/yardmaster, then hands off to the
 # repo's full installer.
 set -euo pipefail

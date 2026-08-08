@@ -55,7 +55,7 @@ Requirements: macOS, [Claude Code](https://claude.com/claude-code) installed and
 logged in, Node ≥ 23.11 (see `.nvmrc`), Xcode CLT (for the node-pty native build).
 
 ```sh
-curl -fsSL https://yard-master.vercel.app/install.sh | bash
+curl -fsSL https://yardmaster.me/install.sh | bash
 ```
 
 (or clone and run `./install.sh` yourself — the one-liner just does that for you)

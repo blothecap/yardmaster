@@ -46,7 +46,7 @@ while kill -0 ${pid} 2>/dev/null; do
 done
 LOG="$HOME/Library/Logs/yardmaster-update.log"
 echo "--- update $(date) ---" >> "$LOG"
-if curl -fsSL https://yard-master.vercel.app/install.sh | bash >> "$LOG" 2>&1; then
+if curl -fsSL https://yardmaster.me/install.sh | bash >> "$LOG" 2>&1; then
   exit 0
 fi
 open /Applications/Yardmaster.app
