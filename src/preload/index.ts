@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { ChangedFile, SessionView, ShortcutAction } from '../shared/types'
 
 export interface InitState {
@@ -98,7 +98,10 @@ const api = {
     ipcRenderer.on('app:updateAvailable', h)
     return () => ipcRenderer.removeListener('app:updateAvailable', h)
   },
-  updateNow: (): Promise<void> => ipcRenderer.invoke('app:updateNow')
+  updateNow: (): Promise<void> => ipcRenderer.invoke('app:updateNow'),
+  checkUpdates: (): Promise<void> => ipcRenderer.invoke('app:checkUpdates'),
+  /** Absolute filesystem path of a dragged-in File (File.path is gone in Electron 32+). */
+  pathForFile: (file: File): string => webUtils.getPathForFile(file)
 }
 
 export type Api = typeof api

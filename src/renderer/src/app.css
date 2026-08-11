@@ -169,6 +169,12 @@ body {
 .fleet-count.clickable:hover { color: var(--fg); }
 .fleet-empty { font-size: 11px; color: var(--fg-dim); }
 .fleet-usage { font-size: 10.5px; color: var(--fg-dim); font-family: var(--font-mono); }
+.fleet-update-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--fg-dim); padding: 3px 4px; border-radius: 4px;
+  display: inline-flex; align-items: center; margin-left: 2px;
+}
+.fleet-update-btn:hover { color: var(--fg); background: var(--bg-hover); }
 .new-session-cta {
   display: flex;
   align-items: center;
@@ -554,6 +560,7 @@ body {
 .view-tab-add { padding: 6px 10px 7px; font-size: 14px; }
 
 .shell-pane { position: absolute; inset: 0; }
+.terminal-pane.drop-hover, .shell-pane.drop-hover { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
 .shell-pane-term { position: absolute; inset: 0; }
 .shell-pane-term .xterm { padding: 8px; }
 

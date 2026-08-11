@@ -29,3 +29,32 @@ describe('formatTokens', () => {
     expect(formatTokens(3_000_000)).toBe('3M')
   })
 })
+
+import { shellQuotePath, droppedFilesText } from './session-utils'
+
+describe('shellQuotePath', () => {
+  it('quotes every path, even safe ones', () => {
+    expect(shellQuotePath('/Users/alice/dev/app/src/index.ts')).toBe("'/Users/alice/dev/app/src/index.ts'")
+    expect(shellQuotePath('~/notes.md')).toBe("'~/notes.md'")
+  })
+
+  it('single-quotes paths with spaces and specials', () => {
+    expect(shellQuotePath('/Users/alice/My Docs/report (final).pdf')).toBe("'/Users/alice/My Docs/report (final).pdf'")
+    expect(shellQuotePath('/tmp/$weird&name')).toBe("'/tmp/$weird&name'")
+  })
+
+  it("escapes embedded single quotes the POSIX way", () => {
+    expect(shellQuotePath("/tmp/it's here.txt")).toBe("'/tmp/it'\\''s here.txt'")
+  })
+})
+
+describe('droppedFilesText', () => {
+  it('joins multiple paths with spaces and adds a trailing space', () => {
+    expect(droppedFilesText(['/a/b.txt', '/c d/e.txt'])).toBe("'/a/b.txt' '/c d/e.txt' ")
+  })
+
+  it('returns empty string for no paths', () => {
+    expect(droppedFilesText([])).toBe('')
+    expect(droppedFilesText([''])).toBe('')
+  })
+})

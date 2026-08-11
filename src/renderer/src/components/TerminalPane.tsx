@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Terminal } from '@xterm/xterm'
 import type { FitAddon } from '@xterm/addon-fit'
 import { createTerm } from '../xterm-factory'
 import { getTerminal, registerTerminal, unregisterTerminal } from '../terminal-registry'
+import { droppedFilesText } from '../session-utils'
 
 interface TerminalPaneProps {
   sessionId: string
@@ -65,11 +66,32 @@ export default function TerminalPane({ sessionId, visible }: TerminalPaneProps):
     return () => cancelAnimationFrame(raf)
   }, [visible])
 
+  const [dropHover, setDropHover] = useState(false)
+  const onDragOver = (e: React.DragEvent): void => {
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    setDropHover(true)
+  }
+  const onDrop = (e: React.DragEvent): void => {
+    setDropHover(false)
+    if (e.dataTransfer.files.length === 0) return
+    e.preventDefault()
+    const text = droppedFilesText([...e.dataTransfer.files].map((f) => window.api.pathForFile(f)))
+    if (text) {
+      window.api.input(sessionId, text)
+      termRef.current?.focus()
+    }
+  }
+
   return (
     <div
       ref={containerRef}
-      className="terminal-pane"
+      className={`terminal-pane${dropHover ? ' drop-hover' : ''}`}
       style={{ display: visible ? 'block' : 'none' }}
+      onDragOver={onDragOver}
+      onDragLeave={() => setDropHover(false)}
+      onDrop={onDrop}
     />
   )
 }

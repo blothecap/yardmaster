@@ -23,6 +23,17 @@ export function projectName(key: string, allKeys: string[]): string {
   return clash && parts.length >= 2 ? `${parts[parts.length - 2]}/${base}` : base
 }
 
+/** Always single-quote a dropped path for pasting into a terminal. */
+export function shellQuotePath(p: string): string {
+  return `'${p.replace(/'/g, `'\\''`)}'`
+}
+
+/** Dropped files -> text to type into the pty: quoted paths, space-separated, trailing space. */
+export function droppedFilesText(paths: string[]): string {
+  const quoted = paths.filter(Boolean).map(shellQuotePath)
+  return quoted.length ? quoted.join(' ') + ' ' : ''
+}
+
 /** Human-readable token count: 950, 12.3k, 803k, 1.2M, 803M, 1.1B. */
 export function formatTokens(n: number): string {
   const fmt = (v: number, unit: string): string => {

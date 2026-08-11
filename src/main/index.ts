@@ -33,6 +33,8 @@ let win: BrowserWindow | null = null
 let manager: SessionManager | null = null
 let shellManager: ShellManager | null = null
 let quitConfirmed = false
+// assigned during app setup; the menu (built earlier) calls through this
+let manualUpdateCheck: (() => Promise<void>) | null = null
 let askingQuit = false
 
 function createWindow(): void {
@@ -94,7 +96,21 @@ function buildMenu(): void {
     click: () => sendShortcut({ type: 'jump', index: i })
   }))
   const menu = Menu.buildFromTemplate([
-    { role: 'appMenu' },
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { label: 'Check for Updates…', click: () => { void manualUpdateCheck?.() } },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
     {
       label: 'Session',
       submenu: [
@@ -273,6 +289,30 @@ app.whenReady().then(async () => {
         safeSend('app:updateAvailable', { current: app.getVersion(), latest })
       }
     }
+    // Manual check (menu item / sidebar button): same check, but always answers —
+    // banner when newer, "up to date" or "couldn't check" dialog otherwise.
+    manualUpdateCheck = async (): Promise<void> => {
+      const latest = await fetchLatestVersion()
+      if (!win || win.isDestroyed()) return
+      if (latest === null) {
+        dialog.showMessageBox(win, {
+          type: 'warning',
+          message: "Couldn't check for updates",
+          detail: 'GitHub could not be reached. Check your connection and try again.'
+        })
+        return
+      }
+      if (isNewerVersion(latest, app.getVersion())) {
+        safeSend('app:updateAvailable', { current: app.getVersion(), latest })
+      } else {
+        dialog.showMessageBox(win, {
+          type: 'info',
+          message: "You're up to date",
+          detail: `Yardmaster v${app.getVersion()} is the latest version.`
+        })
+      }
+    }
+    ipcMain.handle('app:checkUpdates', () => manualUpdateCheck?.())
     setTimeout(checkForUpdate, 5000)
     const updateTimer = setInterval(checkForUpdate, 6 * 60 * 60 * 1000)
     app.on('before-quit', () => clearInterval(updateTimer))
