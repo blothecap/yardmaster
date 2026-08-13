@@ -85,3 +85,8 @@ only seam between them.
 
 The design/spec history lives in `docs/superpowers/` — the app was built
 spec-first with per-task adversarial review.
+
+## License
+
+[Apache-2.0](LICENSE) — free to use, modify, and redistribute; includes an
+explicit patent grant. Copyright 2026 Blothecap.

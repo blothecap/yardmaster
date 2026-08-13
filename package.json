@@ -1,6 +1,7 @@
 {
   "name": "yardmaster",
   "version": "0.2.4",
+  "license": "Apache-2.0",
   "private": true,
   "type": "module",
   "main": "./out/main/index.js",
@@ -43,7 +44,7 @@
     "electron-winstaller@5.4.0": true
   },
   "productName": "Yardmaster",
-  "description": "Yardmaster — a cockpit for running and managing multiple Claude Code sessions",
+  "description": "Yardmaster \u2014 a cockpit for running and managing multiple Claude Code sessions",
   "build": {
     "appId": "com.blothecap.yardmaster",
     "productName": "Yardmaster",
